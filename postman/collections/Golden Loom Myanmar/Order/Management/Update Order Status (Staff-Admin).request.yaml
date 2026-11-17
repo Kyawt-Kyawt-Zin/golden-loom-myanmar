@@ -1,0 +1,16 @@
+$kind: http-request
+name: Update Order Status (Staff/Admin)
+url: http://localhost:5000/api/orders/3/status
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \  \"status\": \"processing\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 2000

@@ -1,0 +1,23 @@
+$kind: http-request
+url: http://localhost:5000/api/order-change-requests
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"orderId\": 2,\r
+
+    \  \"orderItemId\": 2,\r
+
+    \  \"requestType\": \"change_variant\",\r
+
+    \  \"requestedVariantId\": 1,\r
+
+    \  \"customerNote\": \"Could I please change to this available color or size?\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 4000

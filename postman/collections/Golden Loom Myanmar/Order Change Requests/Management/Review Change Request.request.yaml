@@ -1,0 +1,17 @@
+$kind: http-request
+url: http://localhost:5000/api/order-change-requests/9/review
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \  \"status\": \"approved\",\r
+
+    \  \"staffComment\": \"Cancellation approved after the seven-day period.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 2000

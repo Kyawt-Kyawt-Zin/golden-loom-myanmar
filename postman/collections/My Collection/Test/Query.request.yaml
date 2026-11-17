@@ -1,0 +1,8 @@
+$kind: http-request
+url: http://localhost:5000/query?name=kkz&age=39
+method: GET
+queryParams:
+  name: kkz
+  age: "39"
+settings: {}
+order: 4000

@@ -1,0 +1,7 @@
+$kind: http-request
+url: http://localhost:5000/api/products
+method: GET
+body:
+  type: json
+  content: "{\r\n  \"isActive\": true\r\n}"
+order: 3000

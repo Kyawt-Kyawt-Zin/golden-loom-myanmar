@@ -1,0 +1,19 @@
+$kind: http-request
+url: http://localhost:5000/api/feedback
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"feedbackType\": \"product_request\",\r
+
+    \  \"subject\": \"Request for a cable-knit cardigan\",\r
+
+    \  \"message\": \"Could Golden Loom Myanmar bring in a cream cable-knit cardigan in free size?\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 1000

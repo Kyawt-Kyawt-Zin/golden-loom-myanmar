@@ -1,0 +1,7 @@
+$kind: http-request
+url: http://localhost:5000/api/users/1
+method: DELETE
+body:
+  type: text
+  content: ""
+order: 5000

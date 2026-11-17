@@ -1,0 +1,14 @@
+$kind: http-request
+url: http://localhost:5000
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"kkz\"\r
+
+    \    //password\r
+
+    }"
+settings: {}
+order: 1000

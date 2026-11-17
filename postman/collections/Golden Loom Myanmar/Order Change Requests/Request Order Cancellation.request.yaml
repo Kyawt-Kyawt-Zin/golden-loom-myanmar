@@ -1,0 +1,21 @@
+$kind: http-request
+url: http://localhost:5000/api/order-change-requests
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"orderId\": 7,\r
+
+    \  \"requestType\": \"cancel_order\",\r
+
+    \ \"customer Note\": \"I don't need it anymore.\",\r
+
+    \ \"acceptDepositForfeit\": true\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 5000

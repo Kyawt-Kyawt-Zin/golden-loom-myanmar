@@ -1,0 +1,17 @@
+$kind: http-request
+url: http://localhost:5000/api/payments/8/confirm
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \  \"transactionReference\": \"TEST-BANK-REF-001\",\r
+
+    \  \"notes\": \"Deposit manually checked in the business bank account.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 3000

@@ -1,0 +1,31 @@
+$kind: http-request
+url: http://localhost:5000/api/orders/checkout
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"recipientName\": \"Qasim\",\r
+
+    \  \"recipientPhone\": \"+971123456\",\r
+
+    \  \"preorderTermsAccepted\": true,\r
+
+    \  \"preorderDelivery\": {\r
+
+    \    \"deliveryMethod\": \"standard\",\r
+
+    \    \"deliveryZoneId\": 1,\r
+
+    \    \"deliveryAddress\": \"Near Al Rigga Metro Station, Dubai\",\r
+
+    \    \"remainingPaymentMethod\": \"cash_on_delivery\"\r
+
+    \  }\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 3000

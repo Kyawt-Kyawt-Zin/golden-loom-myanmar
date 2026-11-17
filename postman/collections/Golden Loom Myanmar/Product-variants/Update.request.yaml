@@ -1,0 +1,31 @@
+$kind: http-request
+url: http://localhost:5000/api/product-variants/3
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"productId\": 1,\r
+
+    \  \"color\": \"Navy\",\r
+
+    \  \"size\": \"Free Size\",\r
+
+    \  \"sku\": \"HOD-NVY-FS\",\r
+
+    \  \"price\": 120,\r
+
+    \  \"fulfillmentType\": \"preorder\",\r
+
+    \  \"stockQuantity\": 0,\r
+
+    \  \"preorderLeadDays\": 14,\r
+
+    \  \"isActive\": true\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 4000

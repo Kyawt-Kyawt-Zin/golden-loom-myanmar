@@ -1,0 +1,17 @@
+$kind: http-request
+url: http://localhost:5000/api/feedback/1/review
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \  \"status\": \"in_review\",\r
+
+    \  \"staffNote\": \"Thank you for the suggestion. We are checking availability with our Myanmar supplier.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 4000

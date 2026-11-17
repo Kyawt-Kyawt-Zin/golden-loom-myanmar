@@ -1,0 +1,21 @@
+$kind: http-request
+url: http://localhost:5000/api/delivery-zones/1
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Rigga and Union\",\r
+
+    \  \"areaDescription\": \"Al Rigga, Union, and BurJuman — Dubai only\",\r
+
+    \  \"standardFee\": 10,\r
+
+    \  \"quickFee\": 20\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 3000

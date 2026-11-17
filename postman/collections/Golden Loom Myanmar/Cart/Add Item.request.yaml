@@ -1,0 +1,17 @@
+$kind: http-request
+url: http://localhost:5000/api/cart/items
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"productVariantId\": 2,\r
+
+    \  \"quantity\": 1\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 2000

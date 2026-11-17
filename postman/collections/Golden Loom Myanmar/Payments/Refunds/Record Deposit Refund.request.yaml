@@ -1,0 +1,17 @@
+$kind: http-request
+url: http://localhost:5000/api/payments/6/refund
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \  \"refundReference\": \"TEST-REFUND-001\",\r
+
+    \  \"refundNotes\": \"Full 20% preorder deposit refunded manually by bank transfer.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 2000

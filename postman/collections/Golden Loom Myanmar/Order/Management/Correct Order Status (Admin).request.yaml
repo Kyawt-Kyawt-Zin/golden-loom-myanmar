@@ -1,0 +1,17 @@
+$kind: http-request
+url: http://localhost:5000/api/orders/3/status-correction
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \  \"status\": \"processing\",\r
+
+    \  \"reason\": \"Order was marked ready before the final quality check was completed.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 3000

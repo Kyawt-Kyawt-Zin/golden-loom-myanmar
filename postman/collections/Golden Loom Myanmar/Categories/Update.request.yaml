@@ -1,0 +1,15 @@
+$kind: http-request
+url: http://localhost:5000/api/categories/2
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Turtle Neck\",\r
+
+    \  \"description\": \"ultimate warmness with turtle neck\",\r
+
+    \  \"isActive\": true\r
+
+    }"
+order: 4000

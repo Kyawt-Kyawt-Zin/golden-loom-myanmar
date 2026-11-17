@@ -1,0 +1,19 @@
+$kind: http-request
+url: http://localhost:5000/api/products/1
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"categoryId\": 1,\r
+
+    \  \"name\": \"Classic Zip Hoodie\",\r
+
+    \  \"description\": \"A warm and comfortable zip-front hoodie made in Myanmar.\",\r
+
+    \  \"targetGender\": \"unisex\",\r
+
+    \  \"isActive\": true\r
+
+    }"
+order: 5000

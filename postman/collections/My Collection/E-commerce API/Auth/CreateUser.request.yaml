@@ -1,0 +1,18 @@
+$kind: http-request
+url: http://localhost:5000/api/auth/register
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"Kyawt3\",\r
+
+    \    \"email\": \"kyawt3@gmail.com\",\r
+
+    \    \"password\": \"123456\",\r
+
+    \    \"role\": \"user\"\r
+
+    }"
+settings: {}
+order: 3000

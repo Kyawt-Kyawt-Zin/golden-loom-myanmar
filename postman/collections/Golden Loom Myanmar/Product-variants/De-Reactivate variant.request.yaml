@@ -1,0 +1,8 @@
+$kind: http-request
+name: De/Reactivate variant
+url: http://localhost:5000/api/product-variants/1/status
+method: PATCH
+body:
+  type: json
+  content: "{\r\n  \"isActive\": true\r\n}"
+order: 6000

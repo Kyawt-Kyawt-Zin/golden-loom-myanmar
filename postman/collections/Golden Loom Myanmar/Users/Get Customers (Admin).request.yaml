@@ -1,0 +1,11 @@
+$kind: http-request
+url: http://localhost:5000/api/users/customers?page=1&limit=5
+method: GET
+queryParams:
+  page: "1"
+  limit: "5"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 6000

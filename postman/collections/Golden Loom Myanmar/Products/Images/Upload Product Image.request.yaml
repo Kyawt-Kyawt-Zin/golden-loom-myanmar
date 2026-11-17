@@ -1,0 +1,33 @@
+$kind: http-request
+url: http://localhost:5000/api/products/1/images
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: image
+      src:
+        - /C:/Users/HI/Downloads/Telegram Desktop/photo_32_2026-10-31_13-48-17.jpg
+      disabled: false
+    - type: text
+      key: altText
+      value: "\tBlack hoodie front view"
+      disabled: false
+    - type: text
+      key: sortOrder
+      value: "1"
+      disabled: false
+    - type: text
+      key: isPrimary
+      value: "false"
+      disabled: false
+    - type: text
+      key: variantId
+      value: "1"
+      description: ""
+      disabled: false
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 1000

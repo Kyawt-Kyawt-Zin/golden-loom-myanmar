@@ -1,0 +1,21 @@
+$kind: http-request
+url: http://localhost:5000/api/products
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"categoryId\": 4,\r
+
+    \  \"name\": \"Handmade pullover\",\r
+
+    \  \"description\": \"A knitted handmade pullover made in Myanmar.\",\r
+
+    \  \"targetGender\": \"unisex\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 2000

@@ -1,0 +1,10 @@
+$kind: http-request
+url: http://localhost:5000/api/dashboard/low-stock?threshold=10
+method: GET
+queryParams:
+  threshold: "10"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 3000

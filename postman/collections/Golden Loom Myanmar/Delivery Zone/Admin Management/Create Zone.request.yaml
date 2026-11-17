@@ -1,0 +1,21 @@
+$kind: http-request
+url: http://localhost:5000/api/delivery-zones
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Test Zone\",\r
+
+    \  \"areaDescription\": \"Test Zone Location — Dubai only\",\r
+
+    \  \"standardFee\": 35,\r
+
+    \  \"quickFee\": 45\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 2000

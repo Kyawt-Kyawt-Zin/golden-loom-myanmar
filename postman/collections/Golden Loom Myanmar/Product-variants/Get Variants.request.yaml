@@ -1,0 +1,12 @@
+$kind: http-request
+url: http://localhost:5000/api/product-variants?fulfillmentType=preorder&page=1&limit=5
+method: GET
+queryParams:
+  fulfillmentType: preorder
+  page: "1"
+  limit: "5"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 2000

@@ -1,0 +1,29 @@
+$kind: http-request
+url: http://localhost:5000/api/product-variants
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"productId\": 3,\r
+
+    \  \"color\": \"Pink\",\r
+
+    \  \"size\": \"Free Size\",\r
+
+    \  \"sku\": \"CAR-PINK-FS\",\r
+
+    \  \"price\": 130,\r
+
+    \  \"fulfillmentType\": \"preorder\",\r
+
+    \  \"preorderLeadDays\": 46,\r
+
+    \  \"stockQuantity\": 0\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 1000

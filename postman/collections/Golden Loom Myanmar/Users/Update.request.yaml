@@ -1,0 +1,23 @@
+$kind: http-request
+url: http://localhost:5000/api/users/7
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \  \"fullName\": \"Sofia\",\r
+
+    \  \"email\": \"sofia@gmail.com\",\r
+
+    \  \"phone\": \"+97151236\",\r
+
+    \  \"role\": \"customer\",\r
+
+    \  \"isActive\": true\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 4000

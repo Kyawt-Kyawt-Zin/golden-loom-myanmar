@@ -1,0 +1,8 @@
+workspace:
+  id: 9a9300d8-f5f5-4db4-83d1-4013a879b370
+cloudResources:
+  globals:
+    ../postman/globals/workspace.globals.yaml: 8e01de51-4320-4fac-8080-c9d3808f4c86
+  collections:
+    ../postman/collections/Golden Loom Myanmar: 56411469-080ee1a5-ddc9-49a9-b794-6f6aefdcb317
+    ../postman/collections/My Collection: 56411469-a091f5f9-7335-4985-9c98-8b8470ab8655

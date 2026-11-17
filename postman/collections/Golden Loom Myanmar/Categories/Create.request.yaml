@@ -1,0 +1,17 @@
+$kind: http-request
+url: http://localhost:5000/api/categories
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Pullover\",\r
+
+    \  \"description\": \"A sweater worn by pulling it over the head.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 1000
