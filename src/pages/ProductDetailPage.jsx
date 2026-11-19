@@ -1,0 +1,330 @@
+import { Check, Clock3, PackageCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  getCatalogImageUrl,
+  getCatalogProductBySlug,
+} from "../services/api.js";
+
+const formatPrice = (price) => {
+  const amount = Number(price);
+
+  return Number.isFinite(amount) ? `AED ${amount.toFixed(2)}` : "Price unavailable";
+};
+
+const formatGender = (gender) =>
+  `${gender.slice(0, 1).toUpperCase()}${gender.slice(1)}`;
+
+const getAvailabilityMessage = (variant) => {
+  if (variant.fulfillment_type === "in_stock") {
+    return `In stock in Dubai · ${variant.stock_quantity} available`;
+  }
+
+  return `Preorder from Myanmar · approximately ${variant.preorder_lead_days} days`;
+};
+
+export default function ProductDetailPage() {
+  const { slug } = useParams();
+  const [catalogProduct, setCatalogProduct] = useState(null);
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedImageId, setSelectedImageId] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isCurrentRequest = true;
+
+    const loadProduct = async () => {
+      try {
+        const productData = await getCatalogProductBySlug(slug);
+
+        if (isCurrentRequest) {
+          setCatalogProduct(productData);
+          setSelectedImageId(productData.images[0]?.id || null);
+          setErrorMessage("");
+        }
+      } catch (error) {
+        if (isCurrentRequest) {
+          setErrorMessage(error.message || "Unable to load this sweater.");
+        }
+      } finally {
+        if (isCurrentRequest) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadProduct();
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [slug]);
+
+  const variants = catalogProduct?.variants || [];
+  const colors = [...new Set(variants.map((variant) => variant.color))];
+  const sizesForColor = variants
+    .filter((variant) => variant.color === selectedColor)
+    .map((variant) => variant.size);
+  const selectedVariant = variants.find(
+    (variant) =>
+      variant.color === selectedColor && variant.size === selectedSize,
+  );
+
+  const selectedImage = useMemo(() => {
+    const images = catalogProduct?.images || [];
+
+    return images.find((image) => image.id === selectedImageId) || images[0];
+  }, [catalogProduct?.images, selectedImageId]);
+
+  const handleColorSelection = (color) => {
+    const linkedImage = catalogProduct?.images.find((image) =>
+      variants.some(
+        (variant) =>
+          variant.color === color &&
+          Number(variant.id) === Number(image.product_variant_id),
+      ),
+    );
+
+    setSelectedColor(color);
+    setSelectedSize("");
+
+    if (linkedImage) {
+      setSelectedImageId(linkedImage.id);
+    }
+  };
+
+  const handleSizeSelection = (size) => {
+    const exactVariant = variants.find(
+      (variant) => variant.color === selectedColor && variant.size === size,
+    );
+    const linkedImage = catalogProduct?.images.find(
+      (image) =>
+        Number(image.product_variant_id) === Number(exactVariant?.id),
+    );
+
+    setSelectedSize(size);
+
+    if (linkedImage) {
+      setSelectedImageId(linkedImage.id);
+    }
+  };
+
+  const handleImageSelection = (image) => {
+    const linkedVariant = variants.find(
+      (variant) => Number(variant.id) === Number(image.product_variant_id),
+    );
+
+    setSelectedImageId(image.id);
+
+    if (linkedVariant) {
+      setSelectedColor(linkedVariant.color);
+      setSelectedSize("");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid animate-pulse gap-8 lg:grid-cols-2">
+          <div className="aspect-square rounded-3xl bg-[var(--surface-muted)]" />
+          <div className="space-y-5">
+            <div className="h-5 w-32 rounded bg-[var(--surface-muted)]" />
+            <div className="h-12 w-3/4 rounded bg-[var(--surface-muted)]" />
+            <div className="h-24 rounded bg-[var(--surface-muted)]" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (errorMessage || !catalogProduct) {
+    return (
+      <main className="mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-16 sm:px-6 lg:px-8">
+        <section className="w-full rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-800">
+          <h1 className="text-2xl font-bold">This sweater is unavailable</h1>
+          <p className="mt-3">{errorMessage || "Please return to the catalog."}</p>
+          <Link
+            className="mt-6 inline-flex items-center justify-center rounded-xl bg-red-700 px-5 py-3 font-semibold text-white transition hover:bg-red-800"
+            to="/shop"
+          >
+            Return to shop
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
+  const { product, images } = catalogProduct;
+  const selectedImageUrl = getCatalogImageUrl(selectedImage?.image_path);
+  const depositAmount = selectedVariant
+    ? (Number(selectedVariant.price) * Number(selectedVariant.deposit_percentage)) /
+      100
+    : null;
+
+  return (
+    <main className="mx-auto min-w-0 w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
+      <Link
+        className="inline-flex text-sm font-semibold text-[var(--brand)] transition hover:text-[var(--accent)]"
+        to="/shop"
+      >
+        Back to sweaters
+      </Link>
+
+      <section className="mt-6 grid min-w-0 grid-cols-1 gap-8 rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm sm:p-8 lg:grid-cols-2 lg:p-10">
+        <div className="min-w-0">
+          <div className="aspect-square overflow-hidden rounded-3xl bg-[var(--surface-muted)]">
+            {selectedImageUrl ? (
+              <img
+                alt={selectedImage?.alt_text || product.name}
+                className="h-full w-full object-cover"
+                src={selectedImageUrl}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm font-medium text-[var(--text-muted)]">
+                Image coming soon
+              </div>
+            )}
+          </div>
+
+          {images.length > 1 && (
+            <div className="mt-4 flex min-w-0 max-w-full gap-3 overflow-x-auto pb-1">
+              {images.map((image) => {
+                const imageUrl = getCatalogImageUrl(image.image_path);
+                const isSelected = image.id === selectedImage?.id;
+
+                return (
+                  <button
+                    aria-label={`View ${image.alt_text || product.name} image`}
+                    className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 transition sm:h-20 sm:w-20 ${
+                      isSelected
+                        ? "border-[var(--accent)]"
+                        : "border-transparent hover:border-[var(--border)]"
+                    }`}
+                    key={image.id}
+                    onClick={() => handleImageSelection(image)}
+                    type="button"
+                  >
+                    {imageUrl && (
+                      <img
+                        alt=""
+                        className="h-full w-full object-cover"
+                        src={imageUrl}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex min-w-0 flex-col">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+            <span className="text-[var(--accent)]">{product.category_name}</span>
+            <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[var(--brand)]">
+              {formatGender(product.target_gender)}
+            </span>
+          </div>
+
+          <h1 className="mt-4 text-3xl font-bold text-[var(--brand)] sm:text-4xl">
+            {product.name}
+          </h1>
+
+          <p className="mt-4 leading-7 text-[var(--text-muted)]">
+            {product.description || "A Golden Loom Myanmar sweater."}
+          </p>
+
+          <div className="mt-7 border-y border-[var(--border)] py-6">
+            <p className="text-sm font-bold text-[var(--text-main)]">Choose colour</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {colors.map((color) => (
+                <button
+                  className={`rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+                    selectedColor === color
+                      ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                      : "border-[var(--border)] text-[var(--brand)] hover:bg-[var(--surface-muted)]"
+                  }`}
+                  key={color}
+                  onClick={() => handleColorSelection(color)}
+                  type="button"
+                >
+                  {selectedColor === color && <Check className="mr-1 inline" size={16} />}
+                  {color}
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-6 text-sm font-bold text-[var(--text-main)]">Choose size</p>
+            {selectedColor ? (
+              <div className="mt-3 flex flex-wrap gap-3">
+                {sizesForColor.map((size) => (
+                  <button
+                    className={`rounded-xl border px-4 py-2.5 text-sm font-semibold transition ${
+                      selectedSize === size
+                        ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                        : "border-[var(--border)] text-[var(--brand)] hover:bg-[var(--surface-muted)]"
+                    }`}
+                    key={size}
+                    onClick={() => handleSizeSelection(size)}
+                    type="button"
+                  >
+                    {selectedSize === size && <Check className="mr-1 inline" size={16} />}
+                    {size}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-[var(--text-muted)]">
+                Choose a colour first to see its available sizes.
+              </p>
+            )}
+          </div>
+
+          {selectedVariant ? (
+            <section className="mt-6 rounded-2xl bg-[var(--surface-muted)] p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-[var(--text-muted)]">
+                    Your selected option
+                  </p>
+                  <p className="mt-1 text-lg font-bold text-[var(--brand)]">
+                    {selectedVariant.color} · {selectedVariant.size}
+                  </p>
+                </div>
+
+                <p className="text-xl font-bold text-[var(--brand)]">
+                  {formatPrice(selectedVariant.price)}
+                </p>
+              </div>
+
+              <p className="mt-4 flex items-start gap-2 text-sm font-medium text-[var(--text-main)]">
+                {selectedVariant.fulfillment_type === "in_stock" ? (
+                  <PackageCheck className="mt-0.5 shrink-0 text-emerald-700" size={18} />
+                ) : (
+                  <Clock3 className="mt-0.5 shrink-0 text-[var(--accent)]" size={18} />
+                )}
+                {getAvailabilityMessage(selectedVariant)}
+              </p>
+
+              {selectedVariant.fulfillment_type === "preorder" && (
+                <p className="mt-3 rounded-xl bg-[var(--surface)] p-3 text-sm leading-6 text-[var(--text-muted)]">
+                  A {selectedVariant.deposit_percentage}% deposit of {formatPrice(depositAmount)} is required to reserve this preorder. The remaining balance is paid on delivery or pickup.
+                </p>
+              )}
+
+              <p className="mt-4 text-sm text-[var(--text-muted)]">
+                Your cart will be connected in the next step, using this exact selected variant.
+              </p>
+            </section>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-dashed border-[var(--border)] p-5 text-sm leading-6 text-[var(--text-muted)]">
+              Choose both a colour and size to see the exact price and availability.
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
