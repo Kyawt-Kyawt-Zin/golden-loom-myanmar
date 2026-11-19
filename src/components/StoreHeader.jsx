@@ -1,4 +1,4 @@
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import goldenLoomEmblem from "../assets/golden-loom-emblem.png";
@@ -18,7 +18,7 @@ const navigationClass = ({ isActive }) =>
       : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--brand)]"
   }`;
 
-export default function StoreHeader({ theme, onToggleTheme }) {
+export default function StoreHeader({ session, theme, onToggleTheme }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => {
@@ -65,6 +65,18 @@ export default function StoreHeader({ theme, onToggleTheme }) {
 
         <div className="flex items-center gap-2">
           <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
+
+          <NavLink
+            to="/account"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-[var(--brand)] transition hover:border-[var(--accent)]"
+            aria-label={session ? "Open your account" : "Sign in or create an account"}
+            title={session ? "Your account" : "Sign in"}
+          >
+            <UserRound size={18} />
+            <span className="hidden text-sm font-semibold sm:inline">
+              {session ? session.user.full_name.split(" ")[0] : "Sign in"}
+            </span>
+          </NavLink>
 
           <NavLink
             to="/cart"

@@ -1,8 +1,12 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import StoreFooter from "./components/StoreFooter.jsx";
 import StoreHeader from "./components/StoreHeader.jsx";
+import useCustomerSession from "./hooks/useCustomerSession.js";
+import AccountPage from "./pages/AccountPage.jsx";
 import useTheme from "./hooks/useTheme.js";
 import HomePage from "./pages/HomePage.jsx";
+import ProductDetailPage from "./pages/ProductDetailPage.jsx";
+import ShopPage from "./pages/ShopPage.jsx";
 
 function StorePlaceholderPage({ eyebrow, title, description }) {
   return (
@@ -24,22 +28,29 @@ function StorePlaceholderPage({ eyebrow, title, description }) {
 
 function App() {
   const { theme, toggleTheme } = useTheme();
+  const { session, startSession, endSession } = useCustomerSession();
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
-      <StoreHeader theme={theme} onToggleTheme={toggleTheme} />
+      <StoreHeader
+        session={session}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
       <div className="flex flex-1 flex-col">
         <Routes>
           <Route path="/" element={<HomePage />} />
 
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/shop/:slug" element={<ProductDetailPage />} />
           <Route
-            path="/shop"
+            path="/account"
             element={
-              <StorePlaceholderPage
-                eyebrow="SWEATER COLLECTION"
-                title="Shop Golden Loom Myanmar"
-                description="Our live sweater catalog will appear here next, using your real products, variants, images, prices, and in-stock or preorder availability."
+              <AccountPage
+                onSessionEnd={endSession}
+                onSessionStart={startSession}
+                session={session}
               />
             }
           />
