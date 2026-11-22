@@ -1,4 +1,6 @@
+import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { getMyCart } from "./services/api.js";
 import StoreFooter from "./components/StoreFooter.jsx";
 import StoreHeader from "./components/StoreHeader.jsx";
 import useCustomerSession from "./hooks/useCustomerSession.js";
@@ -7,6 +9,7 @@ import useTheme from "./hooks/useTheme.js";
 import HomePage from "./pages/HomePage.jsx";
 import ProductDetailPage from "./pages/ProductDetailPage.jsx";
 import ShopPage from "./pages/ShopPage.jsx";
+import CartPage from "./pages/CartPage.jsx";
 
 function StorePlaceholderPage({ eyebrow, title, description }) {
   return (
@@ -29,10 +32,35 @@ function StorePlaceholderPage({ eyebrow, title, description }) {
 function App() {
   const { theme, toggleTheme } = useTheme();
   const { session, startSession, endSession } = useCustomerSession();
+  const [cartItemCount, setCartItemCount] = useState(0);
+
+  const refreshCartItemCount = useCallback(async () => {
+    if (!session) {
+      setCartItemCount(0);
+      return;
+    }
+
+    try {
+      const cartData = await getMyCart(session.token);
+
+      setCartItemCount(cartData.summary.total_quantity);
+    } catch {
+      setCartItemCount(0);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    refreshCartItemCount();
+  }, [refreshCartItemCount]);
+
+  const handleCartChanged = useCallback((updatedCart) => {
+    setCartItemCount(updatedCart?.summary?.total_quantity || 0);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--page-bg)] text-[var(--text-main)]">
       <StoreHeader
+        cartItemCount={cartItemCount}
         session={session}
         theme={theme}
         onToggleTheme={toggleTheme}
@@ -43,7 +71,17 @@ function App() {
           <Route path="/" element={<HomePage />} />
 
           <Route path="/shop" element={<ShopPage />} />
-          <Route path="/shop/:slug" element={<ProductDetailPage />} />
+
+          <Route
+            path="/shop/:slug"
+            element={
+              <ProductDetailPage
+                onCartChanged={handleCartChanged}
+                session={session}
+              />
+            }
+          />
+
           <Route
             path="/account"
             element={
@@ -80,11 +118,7 @@ function App() {
           <Route
             path="/cart"
             element={
-              <StorePlaceholderPage
-                eyebrow="YOUR SHOPPING BAG"
-                title="Your cart is waiting"
-                description="We will connect the cart after the public product catalog is working, so customers can add real variants with the correct colour, size, and fulfilment type."
-              />
+              <CartPage onCartChanged={handleCartChanged} session={session} />
             }
           />
 

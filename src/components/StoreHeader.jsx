@@ -18,7 +18,12 @@ const navigationClass = ({ isActive }) =>
       : "text-[var(--text-muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--brand)]"
   }`;
 
-export default function StoreHeader({ session, theme, onToggleTheme }) {
+export default function StoreHeader({
+  cartItemCount = 0,
+  session,
+  theme,
+  onToggleTheme,
+}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = () => {
@@ -69,7 +74,9 @@ export default function StoreHeader({ session, theme, onToggleTheme }) {
           <NavLink
             to="/account"
             className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-[var(--brand)] transition hover:border-[var(--accent)]"
-            aria-label={session ? "Open your account" : "Sign in or create an account"}
+            aria-label={
+              session ? "Open your account" : "Sign in or create an account"
+            }
             title={session ? "Your account" : "Sign in"}
           >
             <UserRound size={18} />
@@ -80,11 +87,29 @@ export default function StoreHeader({ session, theme, onToggleTheme }) {
 
           <NavLink
             to="/cart"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] text-white transition hover:bg-[var(--brand-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2"
-            aria-label="Open shopping cart"
-            title="Shopping cart"
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] text-white transition hover:bg-[var(--brand-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2"
+            aria-label={
+              cartItemCount > 0
+                ? `Open shopping cart with ${cartItemCount} item${
+                    cartItemCount === 1 ? "" : "s"
+                  }`
+                : "Open shopping cart"
+            }
+            title={
+              cartItemCount > 0
+                ? `Shopping cart: ${cartItemCount} item${
+                    cartItemCount === 1 ? "" : "s"
+                  }`
+                : "Shopping cart"
+            }
           >
             <ShoppingBag size={19} />
+
+            {cartItemCount > 0 && (
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-extrabold text-[var(--brand)] shadow-sm">
+                {cartItemCount > 9 ? "9+" : cartItemCount}
+              </span>
+            )}
           </NavLink>
 
           <button

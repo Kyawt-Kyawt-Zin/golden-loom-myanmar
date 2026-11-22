@@ -4,7 +4,9 @@ const API_BASE_URL =
 const request = async (path, options = {}) => {
   const isFormData = options.body instanceof FormData;
   const headers = {
-    ...(options.body && !isFormData ? { "Content-Type": "application/json" } : {}),
+    ...(options.body && !isFormData
+      ? { "Content-Type": "application/json" }
+      : {}),
     ...options.headers,
   };
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -60,6 +62,55 @@ export const loginCustomer = async ({ email, password }) => {
   return request("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+};
+
+export const getMyCart = async (token) => {
+  return request("/cart", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const addItemToCart = async (
+  token,
+  { productVariantId, quantity = 1 },
+) => {
+  return request("/cart/items", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ productVariantId, quantity }),
+  });
+};
+
+export const updateCartItemQuantity = async (token, cartItemId, quantity) => {
+  return request(`/cart/items/${cartItemId}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ quantity }),
+  });
+};
+
+export const removeCartItem = async (token, cartItemId) => {
+  return request(`/cart/items/${cartItemId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const clearMyCart = async (token) => {
+  return request("/cart/items", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 };
 

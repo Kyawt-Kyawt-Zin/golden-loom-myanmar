@@ -1,7 +1,8 @@
-import { Check, Clock3, PackageCheck } from "lucide-react";
+import { ShoppingBag, Check, Clock3, PackageCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  addItemToCart,
   getCatalogImageUrl,
   getCatalogProductBySlug,
 } from "../services/api.js";
@@ -9,7 +10,9 @@ import {
 const formatPrice = (price) => {
   const amount = Number(price);
 
-  return Number.isFinite(amount) ? `AED ${amount.toFixed(2)}` : "Price unavailable";
+  return Number.isFinite(amount)
+    ? `AED ${amount.toFixed(2)}`
+    : "Price unavailable";
 };
 
 const formatGender = (gender) =>
@@ -23,14 +26,18 @@ const getAvailabilityMessage = (variant) => {
   return `Preorder from Myanmar · approximately ${variant.preorder_lead_days} days`;
 };
 
-export default function ProductDetailPage() {
+export default function ProductDetailPage({ session, onCartChanged }) {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [catalogProduct, setCatalogProduct] = useState(null);
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedImageId, setSelectedImageId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [cartMessage, setCartMessage] = useState("");
+  const [cartErrorMessage, setCartErrorMessage] = useState("");
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -100,8 +107,7 @@ export default function ProductDetailPage() {
       (variant) => variant.color === selectedColor && variant.size === size,
     );
     const linkedImage = catalogProduct?.images.find(
-      (image) =>
-        Number(image.product_variant_id) === Number(exactVariant?.id),
+      (image) => Number(image.product_variant_id) === Number(exactVariant?.id),
     );
 
     setSelectedSize(size);
@@ -121,6 +127,40 @@ export default function ProductDetailPage() {
     if (linkedVariant) {
       setSelectedColor(linkedVariant.color);
       setSelectedSize("");
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!selectedVariant) {
+      return;
+    }
+
+    if (!session) {
+      navigate("/account");
+      return;
+    }
+
+    try {
+      setCartErrorMessage("");
+      setCartMessage("");
+      setIsAddingToCart(true);
+
+      const updatedCart = await addItemToCart(session.token, {
+        productVariantId: selectedVariant.id,
+        quantity: 1,
+      });
+
+      onCartChanged?.(updatedCart);
+
+      setCartMessage(
+        `${product.name} (${selectedVariant.color} · ${selectedVariant.size}) was added to your cart.`,
+      );
+    } catch (error) {
+      setCartErrorMessage(
+        error.message || "Unable to add this item to your cart.",
+      );
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
@@ -144,7 +184,9 @@ export default function ProductDetailPage() {
       <main className="mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-16 sm:px-6 lg:px-8">
         <section className="w-full rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-800">
           <h1 className="text-2xl font-bold">This sweater is unavailable</h1>
-          <p className="mt-3">{errorMessage || "Please return to the catalog."}</p>
+          <p className="mt-3">
+            {errorMessage || "Please return to the catalog."}
+          </p>
           <Link
             className="mt-6 inline-flex items-center justify-center rounded-xl bg-red-700 px-5 py-3 font-semibold text-white transition hover:bg-red-800"
             to="/shop"
@@ -159,7 +201,8 @@ export default function ProductDetailPage() {
   const { product, images } = catalogProduct;
   const selectedImageUrl = getCatalogImageUrl(selectedImage?.image_path);
   const depositAmount = selectedVariant
-    ? (Number(selectedVariant.price) * Number(selectedVariant.deposit_percentage)) /
+    ? (Number(selectedVariant.price) *
+        Number(selectedVariant.deposit_percentage)) /
       100
     : null;
 
@@ -222,7 +265,9 @@ export default function ProductDetailPage() {
 
         <div className="flex min-w-0 flex-col">
           <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <span className="text-[var(--accent)]">{product.category_name}</span>
+            <span className="text-[var(--accent)]">
+              {product.category_name}
+            </span>
             <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-[var(--brand)]">
               {formatGender(product.target_gender)}
             </span>
@@ -237,7 +282,9 @@ export default function ProductDetailPage() {
           </p>
 
           <div className="mt-7 border-y border-[var(--border)] py-6">
-            <p className="text-sm font-bold text-[var(--text-main)]">Choose colour</p>
+            <p className="text-sm font-bold text-[var(--text-main)]">
+              Choose colour
+            </p>
             <div className="mt-3 flex flex-wrap gap-3">
               {colors.map((color) => (
                 <button
@@ -250,13 +297,17 @@ export default function ProductDetailPage() {
                   onClick={() => handleColorSelection(color)}
                   type="button"
                 >
-                  {selectedColor === color && <Check className="mr-1 inline" size={16} />}
+                  {selectedColor === color && (
+                    <Check className="mr-1 inline" size={16} />
+                  )}
                   {color}
                 </button>
               ))}
             </div>
 
-            <p className="mt-6 text-sm font-bold text-[var(--text-main)]">Choose size</p>
+            <p className="mt-6 text-sm font-bold text-[var(--text-main)]">
+              Choose size
+            </p>
             {selectedColor ? (
               <div className="mt-3 flex flex-wrap gap-3">
                 {sizesForColor.map((size) => (
@@ -270,7 +321,9 @@ export default function ProductDetailPage() {
                     onClick={() => handleSizeSelection(size)}
                     type="button"
                   >
-                    {selectedSize === size && <Check className="mr-1 inline" size={16} />}
+                    {selectedSize === size && (
+                      <Check className="mr-1 inline" size={16} />
+                    )}
                     {size}
                   </button>
                 ))}
@@ -301,26 +354,58 @@ export default function ProductDetailPage() {
 
               <p className="mt-4 flex items-start gap-2 text-sm font-medium text-[var(--text-main)]">
                 {selectedVariant.fulfillment_type === "in_stock" ? (
-                  <PackageCheck className="mt-0.5 shrink-0 text-emerald-700" size={18} />
+                  <PackageCheck
+                    className="mt-0.5 shrink-0 text-emerald-700"
+                    size={18}
+                  />
                 ) : (
-                  <Clock3 className="mt-0.5 shrink-0 text-[var(--accent)]" size={18} />
+                  <Clock3
+                    className="mt-0.5 shrink-0 text-[var(--accent)]"
+                    size={18}
+                  />
                 )}
                 {getAvailabilityMessage(selectedVariant)}
               </p>
 
               {selectedVariant.fulfillment_type === "preorder" && (
                 <p className="mt-3 rounded-xl bg-[var(--surface)] p-3 text-sm leading-6 text-[var(--text-muted)]">
-                  A {selectedVariant.deposit_percentage}% deposit of {formatPrice(depositAmount)} is required to reserve this preorder. The remaining balance is paid on delivery or pickup.
+                  A {selectedVariant.deposit_percentage}% deposit of{" "}
+                  {formatPrice(depositAmount)} is required to reserve this
+                  preorder. The remaining balance is paid on delivery or pickup.
                 </p>
               )}
 
-              <p className="mt-4 text-sm text-[var(--text-muted)]">
-                Your cart will be connected in the next step, using this exact selected variant.
-              </p>
+              {cartErrorMessage && (
+                <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+                  {cartErrorMessage}
+                </p>
+              )}
+
+              {cartMessage && (
+                <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  {cartMessage}
+                </p>
+              )}
+
+              <button
+                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isAddingToCart}
+                onClick={handleAddToCart}
+                type="button"
+              >
+                <ShoppingBag size={18} />
+
+                {!session
+                  ? "Sign in to add to cart"
+                  : isAddingToCart
+                    ? "Adding to cart..."
+                    : "Add to cart"}
+              </button>
             </section>
           ) : (
             <div className="mt-6 rounded-2xl border border-dashed border-[var(--border)] p-5 text-sm leading-6 text-[var(--text-muted)]">
-              Choose both a colour and size to see the exact price and availability.
+              Choose both a colour and size to see the exact price and
+              availability.
             </div>
           )}
         </div>
