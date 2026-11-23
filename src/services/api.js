@@ -114,6 +114,59 @@ export const clearMyCart = async (token) => {
   });
 };
 
+export const getDeliveryZones = async () => {
+  return request("/delivery-zones");
+};
+
+export const checkoutMyCart = async (token, checkoutData) => {
+  return request("/orders/checkout", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(checkoutData),
+  });
+};
+
+export const getMyOrders = async (token) => {
+  return request("/orders/my", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const getMyOrderById = async (token, orderId) => {
+  return request(`/orders/my/${orderId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const getActiveBankAccounts = async () => {
+  return request("/bank-accounts");
+};
+
+export const submitDepositPaymentProof = async (
+  token,
+  paymentId,
+  { transactionReference, paymentProof },
+) => {
+  const formData = new FormData();
+
+  formData.append("transactionReference", transactionReference);
+  formData.append("paymentProof", paymentProof);
+
+  return request(`/payments/${paymentId}/proof`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+};
+
 export const getCatalogImageUrl = (imagePath) => {
   if (!imagePath) {
     return null;

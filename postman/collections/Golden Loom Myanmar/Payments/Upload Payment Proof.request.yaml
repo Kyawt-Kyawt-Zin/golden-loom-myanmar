@@ -1,0 +1,22 @@
+$kind: http-request
+url: http://localhost:5000/api/payments/20/proof
+method: POST
+body:
+  type: formdata
+  content:
+    - type: text
+      key: transactionReference
+      value: TEST-LUCY-001
+      description: ""
+      disabled: false
+    - type: file
+      key: paymentProof
+      src:
+        - /D:/glm_backend_doc/uploads/kpay_receipt.jpg
+      description: ""
+      disabled: false
+auth:
+  type: bearer
+  credentials:
+    token: "{{accessToken}}"
+order: 5000

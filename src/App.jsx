@@ -5,11 +5,14 @@ import StoreFooter from "./components/StoreFooter.jsx";
 import StoreHeader from "./components/StoreHeader.jsx";
 import useCustomerSession from "./hooks/useCustomerSession.js";
 import AccountPage from "./pages/AccountPage.jsx";
+import MyOrdersPage from "./pages/MyOrdersPage.jsx";
+import CustomerOrderDetailPage from "./pages/CustomerOrderDetailsPage.jsx";
 import useTheme from "./hooks/useTheme.js";
 import HomePage from "./pages/HomePage.jsx";
 import ProductDetailPage from "./pages/ProductDetailPage.jsx";
 import ShopPage from "./pages/ShopPage.jsx";
 import CartPage from "./pages/CartPage.jsx";
+import CheckoutPage from "./pages/CheckoutPage.jsx";
 
 function StorePlaceholderPage({ eyebrow, title, description }) {
   return (
@@ -94,6 +97,16 @@ function App() {
           />
 
           <Route
+            path="/account/orders"
+            element={<MyOrdersPage session={session} />}
+          />
+
+          <Route
+            path="/account/orders/:orderId"
+            element={<CustomerOrderDetailPage session={session} />}
+          />
+
+          <Route
             path="/about"
             element={
               <StorePlaceholderPage
@@ -119,6 +132,16 @@ function App() {
             path="/cart"
             element={
               <CartPage onCartChanged={handleCartChanged} session={session} />
+            }
+          />
+
+          <Route
+            path="/checkout"
+            element={
+              <CheckoutPage
+                onCartChanged={handleCartChanged}
+                session={session}
+              />
             }
           />
 

@@ -1,4 +1,4 @@
-import { Eye, EyeOff, LogOut, UserRound } from "lucide-react";
+import { Eye, EyeOff, LogOut, Package, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loginCustomer, registerCustomer } from "../services/api.js";
@@ -104,29 +104,71 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
 
   if (session) {
     return (
-      <main className="mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-12 sm:px-6 lg:px-8">
-        <section className="mx-auto w-full max-w-xl rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-7 shadow-sm sm:p-10">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--brand)]">
-            <UserRound size={23} />
-          </div>
-          <p className="mt-6 text-sm font-bold tracking-[0.14em] text-[var(--accent)]">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
+        <header>
+          <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">
             CUSTOMER ACCOUNT
           </p>
           <h1 className="mt-2 text-3xl font-bold text-[var(--brand)]">
             Welcome, {session.user.full_name}
           </h1>
-          <p className="mt-3 leading-7 text-[var(--text-muted)]">
-            You are signed in and ready to keep your shopping bag connected to your account.
+          <p className="mt-2 text-[var(--text-muted)]">
+            Manage your profile, orders, and preorder payments.
           </p>
+        </header>
+
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--brand)]">
+              <UserRound size={21} />
+            </div>
+
+            <h2 className="mt-5 text-xl font-bold text-[var(--brand)]">
+              Profile
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+              {session.user.email}
+              {session.user.phone ? ` · ${session.user.phone}` : ""}
+            </p>
+
+            <p className="mt-5 text-sm font-semibold text-[var(--brand)]">
+              Profile editing will be available here next.
+            </p>
+          </section>
+
           <button
-            className="mt-7 inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
-            onClick={onSessionEnd}
+            className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-md"
+            onClick={() => navigate("/account/orders")}
             type="button"
           >
-            <LogOut size={18} />
-            Sign out
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--brand)]">
+              <Package size={21} />
+            </div>
+
+            <h2 className="mt-5 text-xl font-bold text-[var(--brand)]">
+              My orders
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+              Track delivery progress, check payment status, and submit a
+              preorder deposit receipt.
+            </p>
+
+            <span className="mt-5 inline-flex text-sm font-semibold text-[var(--brand)]">
+              View my orders →
+            </span>
           </button>
-        </section>
+        </div>
+
+        <button
+          className="mt-8 inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
+          onClick={onSessionEnd}
+          type="button"
+        >
+          <LogOut size={18} />
+          Sign out
+        </button>
       </main>
     );
   }
@@ -176,18 +218,26 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
         <form className="mt-7 space-y-5" onSubmit={handleSubmit} noValidate>
           {isRegistering && (
             <>
-              <label className="block text-sm font-semibold text-[var(--text-main)]" htmlFor="fullName">
+              <label
+                className="block text-sm font-semibold text-[var(--text-main)]"
+                htmlFor="fullName"
+              >
                 Full name
                 <input
                   className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)]"
                   id="fullName"
-                  onChange={(event) => updateField("fullName", event.target.value)}
+                  onChange={(event) =>
+                    updateField("fullName", event.target.value)
+                  }
                   placeholder="Your full name"
                   value={form.fullName}
                 />
               </label>
 
-              <label className="block text-sm font-semibold text-[var(--text-main)]" htmlFor="phone">
+              <label
+                className="block text-sm font-semibold text-[var(--text-main)]"
+                htmlFor="phone"
+              >
                 Phone number
                 <input
                   className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)]"
@@ -201,7 +251,10 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
             </>
           )}
 
-          <label className="block text-sm font-semibold text-[var(--text-main)]" htmlFor="email">
+          <label
+            className="block text-sm font-semibold text-[var(--text-main)]"
+            htmlFor="email"
+          >
             Email address
             <input
               className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)]"
@@ -213,13 +266,18 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
             />
           </label>
 
-          <label className="block text-sm font-semibold text-[var(--text-main)]" htmlFor="password">
+          <label
+            className="block text-sm font-semibold text-[var(--text-main)]"
+            htmlFor="password"
+          >
             Password
             <span className="relative mt-2 block">
               <input
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 pr-12 outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)]"
                 id="password"
-                onChange={(event) => updateField("password", event.target.value)}
+                onChange={(event) =>
+                  updateField("password", event.target.value)
+                }
                 placeholder="At least 6 characters"
                 type={showPassword ? "text" : "password"}
                 value={form.password}

@@ -222,8 +222,8 @@ export default function CartPage({ session, onCartChanged }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-4 border-b border-[var(--border)] pb-7 sm:flex-row sm:items-end sm:justify-between">
+    <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-7 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 border-b border-[var(--border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">
             YOUR SHOPPING BAG
@@ -287,8 +287,8 @@ export default function CartPage({ session, onCartChanged }) {
           </Link>
         </section>
       ) : (
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
-          <section className="space-y-4">
+        <div className="mt-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
             {cartData.items.map((item) => {
               const unavailable = isUnavailable(item);
               const isUpdating = updatingItemId === item.cart_item_id;
@@ -298,17 +298,17 @@ export default function CartPage({ session, onCartChanged }) {
 
               return (
                 <article
-                  className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm"
+                  className="border-b border-[var(--border)] p-4 last:border-b-0 sm:px-5"
                   key={item.cart_item_id}
                 >
-                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                  <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <div className="min-w-0">
                       <p className="text-sm font-semibold text-[var(--accent)]">
                         {item.category_name}
                       </p>
 
                       <Link
-                        className="mt-1 block text-lg font-bold text-[var(--brand)] hover:text-[var(--accent)]"
+                        className="mt-1 block truncate text-lg font-bold text-[var(--brand)] hover:text-[var(--accent)]"
                         to={`/shop/${item.product_slug}`}
                       >
                         {item.product_name}
@@ -318,7 +318,7 @@ export default function CartPage({ session, onCartChanged }) {
                         {item.color} · {item.size} · {item.sku}
                       </p>
 
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-2 flex flex-wrap gap-2">
                         <span className="rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-semibold capitalize text-[var(--text-main)]">
                           {formatText(item.fulfillment_type)}
                         </span>
@@ -331,21 +331,23 @@ export default function CartPage({ session, onCartChanged }) {
                       </div>
 
                       {unavailable && (
-                        <p className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-800">
+                        <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
                           This option is no longer available in the requested
                           quantity. Remove it before checkout.
                         </p>
                       )}
                     </div>
 
-                    <div className="flex shrink-0 flex-col items-start gap-4 sm:items-end">
-                      <p className="text-lg font-bold text-[var(--brand)]">
-                        {formatMoney(item.line_total)}
-                      </p>
+                    <div className="flex shrink-0 items-center justify-between gap-5 sm:flex-col sm:items-end sm:gap-2">
+                      <div className="sm:text-right">
+                        <p className="text-lg font-bold text-[var(--brand)]">
+                          {formatMoney(item.line_total)}
+                        </p>
 
-                      <p className="text-sm text-[var(--text-muted)]">
-                        {formatMoney(item.price)} each
-                      </p>
+                        <p className="text-sm text-[var(--text-muted)]">
+                          {formatMoney(item.price)} each
+                        </p>
+                      </div>
 
                       <div className="flex items-center gap-3">
                         <button
@@ -376,13 +378,16 @@ export default function CartPage({ session, onCartChanged }) {
                       </div>
 
                       <button
+                        aria-label={`Remove ${item.product_name} from cart`}
                         className="inline-flex items-center gap-2 text-sm font-semibold text-rose-700 transition hover:text-rose-900 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={isUpdating}
                         onClick={() => handleRemoveItem(item)}
                         type="button"
                       >
                         <Trash2 size={16} />
-                        {isUpdating ? "Updating..." : "Remove"}
+                        <span className="hidden sm:inline">
+                          {isUpdating ? "Updating..." : "Remove"}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -391,7 +396,7 @@ export default function CartPage({ session, onCartChanged }) {
             })}
           </section>
 
-          <aside className="h-fit rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+          <aside className="h-fit rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm lg:sticky lg:top-24">
             <div className="flex items-center gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--brand)]">
                 <PackageOpen size={20} />
@@ -433,10 +438,12 @@ export default function CartPage({ session, onCartChanged }) {
                 Remove unavailable items before checkout.
               </p>
             ) : (
-              <p className="mt-5 text-sm leading-6 text-[var(--text-muted)]">
-                Delivery details and secure checkout will be added in the next
-                step.
-              </p>
+              <Link
+                className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-[var(--brand)] px-4 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)]"
+                to="/checkout"
+              >
+                Continue to checkout
+              </Link>
             )}
           </aside>
         </div>
