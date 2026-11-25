@@ -70,7 +70,23 @@ export default function ProductDetailPage({ session, onCartChanged }) {
   }, [slug]);
 
   const variants = catalogProduct?.variants || [];
-  const colors = [...new Set(variants.map((variant) => variant.color))];
+
+  const colors = [
+    ...new Set([
+      ...(catalogProduct?.images || []).flatMap((image) => {
+        if (image.product_variant_id == null) {
+          return [];
+        }
+
+        const linkedVariant = variants.find(
+          (variant) => Number(variant.id) === Number(image.product_variant_id),
+        );
+
+        return linkedVariant ? [linkedVariant.color] : [];
+      }),
+      ...variants.map((variant) => variant.color),
+    ]),
+  ];
   const sizesForColor = variants
     .filter((variant) => variant.color === selectedColor)
     .map((variant) => variant.size);

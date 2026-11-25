@@ -150,7 +150,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
     }
 
     if (delivery.deliveryMethod === "pickup") {
-      return Boolean(delivery.pickupTimeSlot.trim());
+      return true;
     }
 
     return Boolean(delivery.deliveryZoneId && delivery.deliveryAddress.trim());
@@ -197,6 +197,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
       if (hasInStockItems) {
         checkoutData.inStockDelivery = {
           ...inStockDelivery,
+          pickupTimeSlot: "",
           deliveryZoneId: Number(inStockDelivery.deliveryZoneId) || null,
         };
       }
@@ -238,6 +239,19 @@ export default function CheckoutPage({ session, onCartChanged }) {
       ? zone.quick_fee
       : zone.standard_fee;
   };
+
+  const inStockFee = !hasInStockItems ? 0 : inStockDelivery.deliveryMethod === "pickup"
+    ? 0
+    : inStockDelivery.deliveryMethod && selectedInStockZone
+      ? Number(getInStockDeliveryFee(selectedInStockZone))
+      : null;
+  const preorderFee = !hasPreorderItems ? 0 : preorderDelivery.deliveryMethod === "pickup"
+    ? 0
+    : preorderDelivery.deliveryMethod && selectedPreorderZone
+      ? Number(selectedPreorderZone.standard_fee)
+      : null;
+  const hasDeliveryFees = inStockFee !== null && preorderFee !== null;
+  const estimatedTotal = Number(cartData.summary.subtotal) + (inStockFee ?? 0) + (preorderFee ?? 0);
 
   const selectInStockZone = (zoneId) => {
     updateDelivery("inStock", "deliveryZoneId", String(zoneId));
@@ -533,22 +547,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
                   </span>
                 </label>
                 {inStockDelivery.deliveryMethod === "pickup" ? (
-                  <label className="mt-4 block text-sm font-semibold text-[var(--text-main)]">
-                    Preferred pickup time
-                    <input
-                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition focus:border-[var(--accent)]"
-                      onChange={(event) =>
-                        updateDelivery(
-                          "inStock",
-                          "pickupTimeSlot",
-                          event.target.value,
-                        )
-                      }
-                      placeholder="For example: Saturday, 3:00 PM – 5:00 PM"
-                      required
-                      value={inStockDelivery.pickupTimeSlot}
-                    />
-                  </label>
+                  <p className="mt-4 text-sm text-[var(--text-muted)]">After your order is confirmed, choose a pickup time within seven days, between 9:00 AM and 3:00 PM Dubai time, on your order details page. <Link className="font-semibold text-[var(--brand)] underline" to="/contact" target="_blank" rel="noopener noreferrer">See pickup location and contact</Link>.</p>
                 ) : inStockDelivery.deliveryMethod === "" ? null : (
                   <div className="mt-4 grid gap-4">
                     <div>
@@ -732,22 +731,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
                 </label>
 
                 {preorderDelivery.deliveryMethod === "pickup" ? (
-                  <label className="mt-4 block text-sm font-semibold text-[var(--text-main)]">
-                    Preferred pickup time
-                    <input
-                      className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition focus:border-[var(--accent)]"
-                      onChange={(event) =>
-                        updateDelivery(
-                          "preorder",
-                          "pickupTimeSlot",
-                          event.target.value,
-                        )
-                      }
-                      placeholder="For example: Saturday, 3:00 PM – 5:00 PM"
-                      required
-                      value={preorderDelivery.pickupTimeSlot}
-                    />
-                  </label>
+                  <p className="mt-4 text-sm text-[var(--text-muted)]">Once your preorder is ready for pickup, choose a time within seven days, between 9:00 AM and 3:00 PM Dubai time, on your order details page. <Link className="font-semibold text-[var(--brand)] underline" to="/contact" target="_blank" rel="noopener noreferrer">See pickup location and contact</Link>.</p>
                 ) : preorderDelivery.deliveryMethod ? (
                   <div className="mt-4 grid gap-4">
                     <div>
@@ -948,9 +932,28 @@ export default function CheckoutPage({ session, onCartChanged }) {
               ))}
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3 text-base font-bold text-[var(--brand)]">
-              <span>Subtotal</span>
-              <span>{formatMoney(cartData.summary.subtotal)}</span>
+            <div className="mt-4 space-y-3 text-sm text-[var(--text-main)]">
+              <div className="flex justify-between gap-3">
+                <span>Items subtotal</span>
+                <span>{formatMoney(cartData.summary.subtotal)}</span>
+              </div>
+              {hasInStockItems && (
+                <div className="flex justify-between gap-3">
+                  <span>In-stock delivery or pickup</span>
+                  <span>{inStockFee === null ? "Choose delivery" : formatMoney(inStockFee)}</span>
+                </div>
+              )}
+              {hasPreorderItems && (
+                <div className="flex justify-between gap-3">
+                  <span>Preorder delivery or pickup</span>
+                  <span>{preorderFee === null ? "Choose delivery" : formatMoney(preorderFee)}</span>
+                </div>
+              )}
+              <div className="flex justify-between gap-3 border-t border-[var(--border)] pt-3 text-base font-bold text-[var(--brand)]">
+                <span>Estimated total</span>
+                <span>{hasDeliveryFees ? formatMoney(estimatedTotal) : "Choose delivery"}</span>
+              </div>
+              <p className="text-xs text-[var(--text-muted)]">Final amounts are confirmed when you place your order.</p>
             </div>
 
             <button

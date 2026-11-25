@@ -65,6 +65,12 @@ export const loginCustomer = async ({ email, password }) => {
   });
 };
 
+export const deleteMyAccount = async (token, password) => request("/auth/me", {
+  method: "DELETE",
+  headers: { Authorization: `Bearer ${token}` },
+  body: JSON.stringify({ password }),
+});
+
 export const getMyCart = async (token) => {
   return request("/cart", {
     headers: {
@@ -144,6 +150,30 @@ export const getMyOrderById = async (token, orderId) => {
   });
 };
 
+export const schedulePickup = async (token, orderId, date, time) => {
+  return request(`/orders/my/${orderId}/pickup`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ date, time }),
+  });
+};
+
+export const getMyOrderChangeRequests = async (token) => request("/order-change-requests/my", {
+  headers: { Authorization: `Bearer ${token}` },
+});
+
+export const requestOrderCancellation = async (token, orderId, customerNote, acceptDepositForfeit) => request("/order-change-requests", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+  body: JSON.stringify({ orderId: Number(orderId), requestType: "cancel_order", customerNote, acceptDepositForfeit }),
+});
+
+export const requestVariantChange = async (token, orderId, orderItemId, requestedVariantId) => request("/order-change-requests", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+  body: JSON.stringify({ orderId: Number(orderId), orderItemId: Number(orderItemId), requestedVariantId: Number(requestedVariantId), requestType: "change_variant" }),
+});
+
 export const getActiveBankAccounts = async () => {
   return request("/bank-accounts");
 };
@@ -167,11 +197,66 @@ export const submitDepositPaymentProof = async (
   });
 };
 
+export const submitDepositPaymentProofToS3 = async (
+  token,
+  paymentId,
+  { transactionReference, paymentProof },
+) => {
+  // 1. Ask the backend for a temporary upload form.
+  const upload = await request(`/payments/${paymentId}/proof/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      contentType: paymentProof.type,
+    }),
+  });
+
+  // 2. Send the file directly to S3 using the temporary form fields.
+  const formData = new FormData();
+
+  for (const [name, value] of Object.entries(upload.fields)) {
+    formData.append(name, value);
+  }
+
+  // S3 requires the file field to be added after the signed fields.
+  formData.append("file", paymentProof);
+
+  const s3Response = await fetch(upload.uploadUrl, {
+    method: "POST",
+    body: formData,
+    credentials: "omit",
+  });
+
+  if (!s3Response.ok) {
+    throw new Error("Unable to upload the screenshot. Please try again.");
+  }
+
+  // 3. Ask the backend to validate and submit the uploaded receipt.
+  return request(`/payments/${paymentId}/proof/complete`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      uploadId: upload.uploadId,
+      transactionReference,
+    }),
+  });
+};
+
 export const getCatalogImageUrl = (imagePath) => {
   if (!imagePath) {
     return null;
   }
 
+  // A complete S3 viewing URL can be used as it is.
+  if (/^https?:\/\//i.test(imagePath)) {
+    return imagePath;
+  }
+
+  // Existing local paths still need the backend address.
   const backendBaseUrl = API_BASE_URL.replace(/\/api$/, "");
 
   return `${backendBaseUrl}${imagePath}`;

@@ -26,6 +26,45 @@ const formatLabel = (value) =>
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
+const formatItemCount = (quantity) => {
+  const total = Number(quantity || 0);
+
+  return `${total} item${total === 1 ? "" : "s"}`;
+};
+
+const getCustomerOrderStatus = (status) => {
+  const customerLabels = {
+    pending: "Order received",
+    processing: "Preparing your order",
+    ready_for_delivery: "Ready for delivery",
+    out_for_delivery: "Out for delivery",
+    ready_for_pickup: "Ready for pickup",
+    delivered: "Delivered",
+    picked_up: "Picked up",
+    cancelled: "Cancelled",
+  };
+
+  return customerLabels[status] || formatLabel(status);
+};
+
+const getCustomerPaymentLabel = (order) => {
+  if (
+    order.payment_status === "unpaid" &&
+    order.payment_method === "cash_on_delivery"
+  ) {
+    return "Pay on delivery";
+  }
+
+  if (
+    order.payment_status === "unpaid" &&
+    order.payment_method === "cash_on_pickup"
+  ) {
+    return "Pay on pickup";
+  }
+
+  return formatLabel(order.payment_status);
+};
+
 const getPaymentStyle = (paymentStatus) => {
   if (paymentStatus === "deposit_confirmed") {
     return "bg-emerald-100 text-emerald-800";
@@ -186,6 +225,11 @@ export default function MyOrdersPage({ session }) {
                     View order
                     <ArrowRight size={16} />
                   </Link>
+                  {['pending', 'confirmed'].includes(order.status) && (
+                    <Link className="ml-4 mt-2 inline-flex text-sm font-semibold text-rose-700 hover:underline" to={`/account/orders/${order.id}#cancellation`}>
+                      Request cancellation
+                    </Link>
+                  )}
                 </div>
               </div>
             </article>

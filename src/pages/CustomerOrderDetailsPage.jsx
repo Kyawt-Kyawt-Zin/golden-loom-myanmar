@@ -8,7 +8,8 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import DepositProofUpload from "../components/DepositProofUpload.jsx";
-import { getActiveBankAccounts, getMyOrderById } from "../services/api.js";
+import VariantChangeRequest from "../components/VariantChangeRequest.jsx";
+import { getActiveBankAccounts, getMyOrderById, schedulePickup, getMyOrderChangeRequests, requestOrderCancellation } from "../services/api.js";
 
 const formatMoney = (amount) => {
   return new Intl.NumberFormat("en-AE", {
@@ -39,6 +40,31 @@ export default function CustomerOrderDetailPage({ session }) {
   const [bankAccounts, setBankAccounts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [pickupDate, setPickupDate] = useState("");
+  const [pickupHour, setPickupHour] = useState("");
+  const [pickupMinute, setPickupMinute] = useState("00");
+  const [pickupError, setPickupError] = useState("");
+  const [pickupSaving, setPickupSaving] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [requestLoadError, setRequestLoadError] = useState("");
+  const [cancelNote, setCancelNote] = useState("");
+  const [acceptForfeit, setAcceptForfeit] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+  const [cancelSaving, setCancelSaving] = useState(false);
+
+  const handlePickupSubmit = async (event) => {
+    event.preventDefault();
+    setPickupSaving(true);
+    setPickupError("");
+    try {
+      await schedulePickup(session.token, orderId, pickupDate, `${pickupHour}:${pickupMinute}`);
+      await loadOrder();
+    } catch (error) {
+      setPickupError(error.message || "Unable to save pickup time.");
+    } finally {
+      setPickupSaving(false);
+    }
+  };
 
   const loadOrder = useCallback(async () => {
     if (!session) {
@@ -53,6 +79,13 @@ export default function CustomerOrderDetailPage({ session }) {
       const details = await getMyOrderById(session.token, orderId);
 
       setOrderDetails(details);
+
+      try {
+        setRequests(await getMyOrderChangeRequests(session.token));
+        setRequestLoadError("");
+      } catch {
+        setRequestLoadError("Unable to load cancellation requests. Please try again.");
+      }
 
       if (details.order.fulfillment_type === "preorder") {
         try {
@@ -72,6 +105,12 @@ export default function CustomerOrderDetailPage({ session }) {
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
+
+  useEffect(() => {
+    if (!isLoading && orderDetails && window.location.hash === "#cancellation") {
+      document.getElementById("cancellation")?.scrollIntoView();
+    }
+  }, [isLoading, orderDetails]);
 
   if (!session) {
     return (
@@ -127,6 +166,21 @@ export default function CustomerOrderDetailPage({ session }) {
   }
 
   const { order, items, payments } = orderDetails;
+  const cancellation = requests.find((request) => request.order_number === order.order_number && request.request_type === "cancel_order");
+  const latePreorder = order.fulfillment_type === "preorder" && order.cancellation_deadline && Date.now() > new Date(order.cancellation_deadline).getTime();
+  const submitCancellation = async (event) => {
+    event.preventDefault();
+    setCancelSaving(true);
+    setCancelError("");
+    try {
+      await requestOrderCancellation(session.token, orderId, cancelNote, acceptForfeit);
+      await loadOrder();
+    } catch (error) {
+      setCancelError(error.message || "Unable to submit your request.");
+    } finally {
+      setCancelSaving(false);
+    }
+  };
   const depositPayment = payments.find(
     (payment) => payment.payment_type === "deposit",
   );
@@ -183,8 +237,33 @@ export default function CustomerOrderDetailPage({ session }) {
           <div className="mt-5 space-y-2 text-sm text-[var(--text-muted)]">
             <p>{formatLabel(order.delivery_method)}</p>
             <p>{order.delivery_zone_name || "Pickup"}</p>
+            {order.delivery_method === "pickup" && <p><Link className="font-semibold text-[var(--brand)] underline" to="/contact">Pickup location and contact</Link></p>}
             {order.delivery_address && <p>{order.delivery_address}</p>}
             {order.pickup_time_slot && <p>{order.pickup_time_slot}</p>}
+            {order.delivery_method === "pickup" && !order.pickup_window && !order.pickup_time_slot && (
+              <p>{["pending", "confirmed", "processing"].includes(order.status) && order.fulfillment_type === "preorder" ? "Choose your pickup time once your preorder is ready." : order.status === "pending" ? "Choose your pickup time after your order is confirmed." : "Please contact us to arrange pickup."}</p>
+            )}
+            {order.delivery_method === "pickup" && order.pickup_window && ["confirmed", "processing", "ready_for_pickup"].includes(order.status) && (order.fulfillment_type !== "preorder" || order.status === "ready_for_pickup") && (
+              order.pickup_window.expired || order.pickup_window.minDate > order.pickup_window.maxDate ? (
+                <p>The pickup window has passed. Please contact us to arrange pickup.</p>
+              ) : (
+                <form className="mt-4 space-y-3" onSubmit={handlePickupSubmit}>
+                  <p>Choose a future pickup time within seven days, between 9:00 AM and 3:00 PM Dubai time.</p>
+                  <label className="block">Pickup date<input className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" type="date" min={order.pickup_window.minDate} max={order.pickup_window.maxDate} value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} required /></label>
+                  <fieldset>
+                    <legend className="font-semibold">Pickup time</legend>
+                    <p className="mt-1">Pickup hours: 9:00 AM–3:00 PM Dubai time.</p>
+                    <div className="mt-2 flex items-end gap-3">
+                      <label className="flex-1">Hour<select className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" value={pickupHour} onChange={(e) => { setPickupHour(e.target.value); if (e.target.value === "15") setPickupMinute("00"); }} required><option value="">Choose hour</option>{[9, 10, 11, 12, 13, 14, 15].map((hour) => <option value={String(hour).padStart(2, "0")} key={hour}>{hour > 12 ? hour - 12 : hour} {hour < 12 ? "AM" : "PM"}</option>)}</select></label>
+                      <span className="pb-3 font-bold">:</span>
+                      <label className="flex-1">Minute<select className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" value={pickupMinute} onChange={(e) => setPickupMinute(e.target.value)}>{Array.from({ length: pickupHour === "15" ? 1 : 60 }, (_, minute) => <option value={String(minute).padStart(2, "0")} key={minute}>{String(minute).padStart(2, "0")}</option>)}</select></label>
+                    </div>
+                  </fieldset>
+                  {pickupError && <p role="alert" className="text-rose-700">{pickupError}</p>}
+                  <button className="rounded-xl bg-[var(--brand)] px-4 py-2 font-semibold text-white disabled:opacity-60" disabled={pickupSaving} type="submit">{pickupSaving ? "Saving…" : "Save pickup time"}</button>
+                </form>
+              )
+            )}
           </div>
         </section>
 
@@ -227,6 +306,7 @@ export default function CustomerOrderDetailPage({ session }) {
                 <p className="mt-1 text-sm text-[var(--text-muted)]">
                   {item.color} · {item.size} · Quantity {item.quantity}
                 </p>
+                {["pending", "confirmed"].includes(order.status) && <VariantChangeRequest item={item} order={order} token={session.token} />}
               </div>
 
               <p className="shrink-0 font-bold text-[var(--brand)]">
@@ -235,6 +315,22 @@ export default function CustomerOrderDetailPage({ session }) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section id="cancellation" className="mt-5 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
+        <h2 className="text-lg font-bold text-[var(--brand)]">Cancellation request</h2>
+        {requestLoadError ? <p className="mt-3 text-sm text-rose-700">{requestLoadError}</p> : cancellation && cancellation.status === "pending" ? (
+          <p className="mt-3 text-sm">Your cancellation request is waiting for staff review. Your order is not cancelled yet.</p>
+        ) : ["pending", "confirmed"].includes(order.status) ? (
+          <form className="mt-3 space-y-3" onSubmit={submitCancellation}>
+            {cancellation?.staff_note && <p className="text-sm">Previous request: {cancellation.staff_note}</p>}
+            <p className="text-sm">Send a request for staff to review. Your order remains active until the request is approved.</p>
+            <label className="block text-sm">Reason (optional)<textarea className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" maxLength={500} value={cancelNote} onChange={(e) => setCancelNote(e.target.value)} /></label>
+            {latePreorder && <label className="flex gap-2 text-sm"><input type="checkbox" checked={acceptForfeit} onChange={(e) => setAcceptForfeit(e.target.checked)} required />The seven-day cancellation period has ended. I understand the deposit is non-refundable.</label>}
+            {cancelError && <p role="alert" className="text-sm text-rose-700">{cancelError}</p>}
+            <button type="submit" disabled={cancelSaving} className="rounded-xl border border-rose-700 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-60">{cancelSaving ? "Sending…" : "Request cancellation"}</button>
+          </form>
+        ) : <p className="mt-3 text-sm">This order can no longer be cancelled online. Please contact us for help.</p>}
       </section>
 
       {order.fulfillment_type === "preorder" && (

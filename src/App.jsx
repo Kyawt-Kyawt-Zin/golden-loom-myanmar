@@ -13,20 +13,24 @@ import ProductDetailPage from "./pages/ProductDetailPage.jsx";
 import ShopPage from "./pages/ShopPage.jsx";
 import CartPage from "./pages/CartPage.jsx";
 import CheckoutPage from "./pages/CheckoutPage.jsx";
+import ContactPage from "./pages/ContactPage.jsx";
 
-function StorePlaceholderPage({ eyebrow, title, description }) {
+function AboutPage() {
   return (
-    <main className="mx-auto flex max-w-7xl flex-1 items-center px-4 py-16 sm:px-6 lg:px-8">
-      <section className="w-full rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center shadow-sm sm:p-12">
-        <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">
-          {eyebrow}
-        </p>
-
-        <h1 className="mt-3 text-3xl font-bold text-[var(--brand)]">{title}</h1>
-
-        <p className="mx-auto mt-4 max-w-xl leading-7 text-[var(--text-muted)]">
-          {description}
-        </p>
+    <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-12 sm:px-6 lg:px-8">
+      <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm sm:p-10">
+        <p className="text-sm font-bold tracking-[0.16em] text-[var(--accent)]">GOLDEN LOOM MYANMAR</p>
+        <h1 className="mt-3 text-3xl font-bold text-[var(--brand)]">Made in Myanmar, chosen for Dubai</h1>
+        <p className="mt-4 leading-7 text-[var(--text-muted)]">Shop sweaters available in Dubai or choose a design to preorder from Myanmar.</p>
+        <h2 className="mt-10 text-2xl font-bold text-[var(--brand)]">How preorder works</h2>
+        <ol className="mt-5 list-decimal space-y-4 pl-5 leading-7 text-[var(--text-main)]">
+          <li>Choose a preorder sweater, colour and size. The product page shows the estimated lead time.</li>
+          <li>Place your order and choose delivery or pickup. Your preorder items and any in-stock items are handled as separate orders.</li>
+          <li>Pay a 20% deposit on the preorder items by bank transfer, then submit your payment screenshot and transaction reference.</li>
+          <li>Our staff reviews the receipt. After the deposit is confirmed, your preorder can be processed.</li>
+          <li>Pay the remaining balance using your selected payment method when your order is ready for delivery or pickup. Any delivery fee is included in the order total.</li>
+        </ol>
+        <p className="mt-5 text-sm leading-6 text-[var(--text-muted)]">Lead times are estimates. You can follow your order from your account.</p>
       </section>
     </main>
   );
@@ -106,27 +110,9 @@ function App() {
             element={<CustomerOrderDetailPage session={session} />}
           />
 
-          <Route
-            path="/about"
-            element={
-              <StorePlaceholderPage
-                eyebrow="OUR STORY"
-                title="Made in Myanmar, chosen for Dubai"
-                description="This page will introduce Golden Loom Myanmar, the people and craft behind the sweaters, and how our preorder process works."
-              />
-            }
-          />
+          <Route path="/about" element={<AboutPage />} />
 
-          <Route
-            path="/contact"
-            element={
-              <StorePlaceholderPage
-                eyebrow="GET IN TOUCH"
-                title="Contact Golden Loom Myanmar"
-                description="This page will later contain your customer contact options, service information, and Dubai delivery support."
-              />
-            }
-          />
+          <Route path="/contact" element={<ContactPage />} />
 
           <Route
             path="/cart"

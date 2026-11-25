@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, FileImage, Upload } from "lucide-react";
-import { submitDepositPaymentProof } from "../services/api.js";
+import {
+  submitDepositPaymentProof,
+  submitDepositPaymentProofToS3,
+} from "../services/api.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -83,7 +86,12 @@ export default function DepositProofUpload({
       setErrorMessage("");
       setIsSubmitting(true);
 
-      const result = await submitDepositPaymentProof(session.token, paymentId, {
+      const submitReceipt =
+        import.meta.env.VITE_RECEIPT_UPLOAD_DRIVER === "s3"
+          ? submitDepositPaymentProofToS3
+          : submitDepositPaymentProof;
+
+      const result = await submitReceipt(session.token, paymentId, {
         transactionReference: transactionReference.trim(),
         paymentProof,
       });

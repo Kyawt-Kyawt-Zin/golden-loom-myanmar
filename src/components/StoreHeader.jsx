@@ -73,7 +73,13 @@ export default function StoreHeader({
 
           <NavLink
             to="/account"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-[var(--brand)] transition hover:border-[var(--accent)]"
+            className={({ isActive }) =>
+              `inline-flex h-10 items-center justify-center gap-2 rounded-full border px-3 text-[var(--brand)] transition hover:border-[var(--accent)] ${
+                isActive
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                  : "border-[var(--border)] bg-[var(--surface)]"
+              }`
+            }
             aria-label={
               session ? "Open your account" : "Sign in or create an account"
             }
@@ -106,7 +112,7 @@ export default function StoreHeader({
             <ShoppingBag size={19} />
 
             {cartItemCount > 0 && (
-              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[10px] font-extrabold text-[var(--brand)] shadow-sm">
+              <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-[var(--surface)] bg-[var(--accent)] px-1 text-[10px] font-extrabold text-[#00382f] shadow-sm">
                 {cartItemCount > 9 ? "9+" : cartItemCount}
               </span>
             )}
