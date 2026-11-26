@@ -10,6 +10,7 @@
   --text-muted: #5d6f68;
   --brand: #004d40;
   --brand-strong: #00382f;
+  --on-brand: #ffffff;
   --accent: #d69b22;
   --accent-soft: #fff0c7;
   --border: #eadfc9;
@@ -26,6 +27,7 @@ html[data-theme="dark"] {
   --text-muted: #c8d8d0;
   --brand: #e3ad3c;
   --brand-strong: #f0c45e;
+  --on-brand: #102923;
   --accent: #e3ad3c;
   --accent-soft: #4b3a16;
   --border: #356154;
@@ -37,7 +39,6 @@ html {
 }
 
 body {
-  min-width: 320px;
   min-height: 100vh;
   margin: 0;
   background: var(--page-bg);

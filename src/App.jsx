@@ -27,7 +27,7 @@ function AboutPage() {
           <li>Choose a preorder sweater, colour and size. The product page shows the estimated lead time.</li>
           <li>Place your order and choose delivery or pickup. Your preorder items and any in-stock items are handled as separate orders.</li>
           <li>Pay a 20% deposit on the preorder items by bank transfer, then submit your payment screenshot and transaction reference.</li>
-          <li>Our staff reviews the receipt. After the deposit is confirmed, your preorder can be processed.</li>
+          <li>Your receipt will be reviewed. After the deposit is confirmed, your preorder can be processed.</li>
           <li>Pay the remaining balance using your selected payment method when your order is ready for delivery or pickup. Any delivery fee is included in the order total.</li>
         </ol>
         <p className="mt-5 text-sm leading-6 text-[var(--text-muted)]">Lead times are estimates. You can follow your order from your account.</p>

@@ -34,7 +34,7 @@ const formatItemCount = (quantity) => {
 
 const getCustomerOrderStatus = (status) => {
   const customerLabels = {
-    pending: "Order received",
+    pending: "Order placed",
     processing: "Preparing your order",
     ready_for_delivery: "Ready for delivery",
     out_for_delivery: "Out for delivery",
@@ -183,12 +183,38 @@ export default function MyOrdersPage({ session }) {
               className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm"
               key={order.id}
             >
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-bold text-[var(--brand)]">
-                      {order.order_number}
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--brand)]" aria-hidden="true">
+                    <Package size={21} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                  {Array.isArray(order.items) && order.items.length > 0 ? (
+                    <ul className="space-y-3" aria-label="Items in this order">
+                      {order.items.map((item, index) => (
+                        <li key={index} className="min-w-0">
+                          <p className="break-words font-bold text-[var(--brand)]">
+                            {item.product_name || "Order item"}
+                          </p>
+                          <p className="mt-0.5 text-sm text-[var(--text-muted)]">
+                            {[item.color, item.size].filter(Boolean).join(" · ")}
+                            {Number(item.quantity) > 0 ? ` · Qty ${item.quantity}` : ""}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="break-words font-bold text-[var(--brand)]">
+                      {order.first_item_summary || "View your order items"}
                     </p>
+                  )}
+
+                  <p className="mt-2 break-all text-xs text-[var(--text-muted)]">
+                    Order {order.order_number}
+                    {Number(order.total_item_quantity) > 0 && ` · ${formatItemCount(order.total_item_quantity)}`}
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand)]">
                       {formatLabel(order.fulfillment_type)}
                     </span>
@@ -197,21 +223,22 @@ export default function MyOrdersPage({ session }) {
                         order.payment_status,
                       )}`}
                     >
-                      {formatLabel(order.payment_status)}
+                      {getCustomerPaymentLabel(order)}
                     </span>
                   </div>
 
                   <p className="mt-3 text-sm text-[var(--text-muted)]">
                     Placed {formatDate(order.created_at)} ·{" "}
-                    {formatLabel(order.status)}
+                    {getCustomerOrderStatus(order.status)}
                   </p>
 
                   {order.fulfillment_type === "preorder" &&
                     order.payment_status === "deposit_pending" && (
-                      <p className="mt-3 text-sm font-semibold text-amber-800">
+                      <p className="mt-3 text-sm font-semibold text-[var(--brand)]">
                         Deposit due: {formatMoney(order.deposit_amount)}
                       </p>
                     )}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between gap-5 sm:block sm:text-right">
@@ -226,7 +253,7 @@ export default function MyOrdersPage({ session }) {
                     <ArrowRight size={16} />
                   </Link>
                   {['pending', 'confirmed'].includes(order.status) && (
-                    <Link className="ml-4 mt-2 inline-flex text-sm font-semibold text-rose-700 hover:underline" to={`/account/orders/${order.id}#cancellation`}>
+                    <Link className="ml-4 mt-2 inline-flex text-sm font-semibold text-[var(--danger)] hover:underline" to={`/account/orders/${order.id}#cancellation`}>
                       Request cancellation
                     </Link>
                   )}

@@ -1,30 +1,29 @@
 import { ArrowRight, PackageCheck, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import sweaterCollection from "../assets/sweater-collection.jpg";
 
 export default function HomePage() {
   return (
     <main>
       <section className="border-b border-[var(--border)]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-20">
-          <div className="flex flex-col justify-center">
-            <p className="mb-4 text-sm font-bold tracking-[0.18em] text-[var(--accent)]">
+        <div className="mx-auto grid max-w-7xl gap-7 px-4 py-6 sm:px-6 sm:py-10 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-14 lg:px-8 lg:py-14">
+          <div className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] shadow-sm lg:order-2">
+            <img src={sweaterCollection} alt="A collection of colourful Golden Loom Myanmar sweaters" className="aspect-[4/3] w-full object-cover object-top lg:aspect-square" fetchPriority="high" />
+          </div>
+          <div className="flex flex-col justify-center lg:order-1">
+            <p className="mb-3 text-xs font-bold tracking-[0.15em] text-[var(--accent)] sm:text-sm">
               MADE IN MYANMAR · DELIVERED IN DUBAI
             </p>
-
-            <h1 className="max-w-2xl text-4xl font-bold leading-tight text-[var(--brand)] sm:text-5xl">
-              Warm sweaters with a story woven into every piece.
+            <h1 className="max-w-xl text-3xl font-bold leading-tight text-[var(--brand)] sm:text-5xl">
+              Find your next favourite sweater.
             </h1>
-
-            <p className="mt-5 max-w-xl text-base leading-7 text-[var(--text-muted)] sm:text-lg">
-              Discover sweaters made in Myanmar for women, men, and everyone.
-              Choose ready-to-deliver styles in Dubai or preorder a special
-              piece with a simple 20% deposit.
+            <p className="mt-4 max-w-lg leading-7 text-[var(--text-muted)]">
+              Explore our collection, ready in Dubai or available to preorder.
             </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <Link
                 to="/shop"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--brand)] px-6 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)]"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--brand)] px-6 py-3 font-semibold text-[var(--on-brand)] transition hover:bg-[var(--brand-strong)]"
               >
                 Shop sweaters
                 <ArrowRight size={18} />
@@ -39,24 +38,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-[var(--border)] bg-[var(--surface-muted)] p-6 shadow-sm sm:p-8">
-            <div className="flex h-full min-h-72 flex-col justify-between rounded-[1.5rem] bg-[var(--brand)] p-7 text-white">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent)] text-[var(--brand-strong)]">
-                <Sparkles size={24} />
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold tracking-wide text-[#fff0c7]">
-                  GOLDEN LOOM PROMISE
-                </p>
-
-                <h2 className="mt-3 text-3xl font-bold leading-tight">
-                  Comfortable pieces, carefully chosen for your everyday
-                  wardrobe.
-                </h2>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 

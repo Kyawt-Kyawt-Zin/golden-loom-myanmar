@@ -32,14 +32,14 @@ export default function StoreHeader({
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[var(--page-bg)]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-3 sm:px-6 lg:px-8">
         <NavLink
           to="/"
           onClick={closeMobileMenu}
-          className="flex min-w-0 items-center gap-3"
+          className="flex shrink-0 items-center gap-1.5 sm:gap-3"
           aria-label="Golden Loom Myanmar home"
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--accent)] bg-[var(--surface-muted)]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--accent)] bg-[var(--surface-muted)] sm:h-11 sm:w-11">
             <img
               src={goldenLoomEmblem}
               alt=""
@@ -47,8 +47,8 @@ export default function StoreHeader({
             />
           </span>
 
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-bold tracking-wide text-[var(--brand)]">
+          <span>
+            <span className="block whitespace-nowrap text-[10px] font-bold tracking-wide text-[var(--brand)] sm:text-sm">
               GOLDEN LOOM
             </span>
             <span className="block text-xs font-medium text-[var(--text-muted)]">
@@ -68,13 +68,13 @@ export default function StoreHeader({
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <ThemeToggle theme={theme} onToggleTheme={onToggleTheme} />
 
           <NavLink
             to="/account"
             className={({ isActive }) =>
-              `inline-flex h-10 items-center justify-center gap-2 rounded-full border px-3 text-[var(--brand)] transition hover:border-[var(--accent)] ${
+              `relative inline-flex h-9 w-9 items-center justify-center gap-2 rounded-full border text-[var(--brand)] transition hover:border-[var(--accent)] sm:h-10 sm:w-auto sm:px-3 ${
                 isActive
                   ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                   : "border-[var(--border)] bg-[var(--surface)]"
@@ -86,6 +86,7 @@ export default function StoreHeader({
             title={session ? "Your account" : "Sign in"}
           >
             <UserRound size={18} />
+            {session && <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[var(--page-bg)] bg-emerald-500" />}
             <span className="hidden text-sm font-semibold sm:inline">
               {session ? session.user.full_name.split(" ")[0] : "Sign in"}
             </span>
@@ -94,7 +95,7 @@ export default function StoreHeader({
           <NavLink
             to="/cart"
             className={({ isActive }) =>
-              `relative inline-flex h-10 w-10 items-center justify-center rounded-full border text-[var(--brand)] transition hover:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 ${
+              `relative inline-flex h-9 w-9 items-center justify-center rounded-full border text-[var(--brand)] transition hover:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 sm:h-10 sm:w-10 ${
                 isActive
                   ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                   : "border-[var(--border)] bg-[var(--surface)]"
@@ -127,13 +128,17 @@ export default function StoreHeader({
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--brand)] transition hover:border-[var(--accent)] md:hidden"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--brand)] transition hover:border-[var(--accent)] md:hidden"
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMobileMenuOpen}
           >
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
+      </div>
+
+      <div className="border-t border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)] sm:hidden">
+        {session ? `Signed in as ${session.user.full_name}` : "Browsing as a guest · Sign in to view your account"}
       </div>
 
       {isMobileMenuOpen && (

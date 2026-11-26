@@ -97,7 +97,7 @@ export default function DepositProofUpload({
       });
 
       setSuccessMessage(
-        "Receipt submitted. Our team will verify your deposit shortly.",
+        "Thank you! Your receipt has been submitted and is awaiting confirmation.",
       );
 
       onSubmitted?.(result);
@@ -131,16 +131,16 @@ export default function DepositProofUpload({
 
   return (
     <form
-      className="rounded-2xl border border-amber-200 bg-amber-50 p-5"
+      className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-5"
       onSubmit={handleSubmit}
     >
       <div className="flex items-center gap-3">
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white text-amber-700">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface)] text-[var(--brand)]">
           <Upload size={20} />
         </span>
 
         <div>
-          <p className="text-sm font-bold tracking-[0.12em] text-amber-800">
+          <p className="text-sm font-bold tracking-[0.12em] text-[var(--brand)]">
             DEPOSIT RECEIPT
           </p>
           <h3 className="font-bold text-[var(--brand)]">
@@ -151,7 +151,7 @@ export default function DepositProofUpload({
 
       <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
         Transfer the deposit to the bank account shown above, then upload the
-        screenshot and transaction reference for staff verification.
+        screenshot and transaction reference for confirmation.
       </p>
 
       {errorMessage && (
@@ -163,7 +163,7 @@ export default function DepositProofUpload({
       <label className="mt-5 block text-sm font-semibold text-[var(--text-main)]">
         Bank transaction reference
         <input
-          className="mt-2 w-full rounded-xl border border-amber-200 bg-white px-4 py-3 outline-none transition focus:border-[var(--accent)]"
+          className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[var(--text-main)] outline-none transition focus:border-[var(--accent)]"
           onChange={(event) => {
             setTransactionReference(event.target.value);
             setErrorMessage("");
@@ -175,9 +175,9 @@ export default function DepositProofUpload({
 
       <label className="mt-4 block text-sm font-semibold text-[var(--text-main)]">
         Payment screenshot
-        <span className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-amber-300 bg-white px-4 py-3 text-sm text-[var(--text-muted)]">
+        <span className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-muted)]">
           <span className="flex min-w-0 items-center gap-2">
-            <FileImage className="shrink-0 text-amber-700" size={18} />
+            <FileImage className="shrink-0 text-[var(--brand)]" size={18} />
             <span className="truncate">
               {paymentProof
                 ? paymentProof.name
@@ -206,7 +206,7 @@ export default function DepositProofUpload({
       )}
 
       <button
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-3 font-semibold text-[var(--on-brand)] transition hover:bg-[var(--brand-strong)] disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isSubmitting}
         type="submit"
       >

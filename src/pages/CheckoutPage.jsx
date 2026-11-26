@@ -8,6 +8,7 @@ import {
   getMyCart,
 } from "../services/api.js";
 import DepositProofUpload from "../components/DepositProofUpload.jsx";
+import { getCheckoutConfirmation } from "../helper/checkout-confirmation.js";
 
 const emptyCartData = {
   cart: null,
@@ -57,6 +58,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
   const [preorderTermsAccepted, setPreorderTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutResult, setCheckoutResult] = useState(null);
+  const [submittedDepositIds, setSubmittedDepositIds] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [isPreorderZonePickerOpen, setIsPreorderZonePickerOpen] =
     useState(true);
@@ -224,6 +226,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
         }
       }
 
+      setSubmittedDepositIds([]);
       setCheckoutResult(result);
       setCartData(emptyCartData);
       onCartChanged?.(emptyCartData);
@@ -286,25 +289,28 @@ export default function CheckoutPage({ session, onCartChanged }) {
   }
 
   if (checkoutResult) {
-    const preorderOrders = checkoutResult.orders.filter(
-      (order) => order.fulfillment_type === "preorder",
-    );
+    const { preorderOrders, allReceiptsSubmitted, awaitingReceipt } =
+      getCheckoutConfirmation(checkoutResult.orders, submittedDepositIds);
 
     return (
       <main className="mx-auto flex w-full max-w-3xl flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
         <section className="w-full rounded-3xl border border-emerald-200 bg-[var(--surface)] p-6 shadow-sm sm:p-9">
-          <p className="text-sm font-bold tracking-[0.16em] text-emerald-700">
-            ORDER RECEIVED
+          <p className="text-sm font-bold tracking-[0.16em] text-[var(--brand)]">
+            {awaitingReceipt ? "ORDER PLACED" : "ORDER RECEIVED"}
           </p>
 
           <h1 className="mt-2 text-3xl font-bold text-[var(--brand)]">
-            Thank you — we received your order
+            {awaitingReceipt
+              ? "We’re excited about your order!"
+              : "Thank you — we received your order"}
           </h1>
 
           <p className="mt-3 leading-7 text-[var(--text-muted)]">
-            {preorderOrders.length > 0
-              ? "Your preorder is awaiting a 20% deposit and staff verification before production can begin."
-              : "Your order was received and is awaiting processing."}
+            {awaitingReceipt
+              ? "Your order has been placed. Complete your deposit and upload your receipt to proceed."
+              : allReceiptsSubmitted
+                ? "Your receipt has been submitted and is awaiting confirmation."
+                : "Your order was received and is awaiting processing."}
           </p>
 
           <div className="mt-7 space-y-3">
@@ -327,7 +333,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
                     {formatMoney(order.total_amount)}
                   </p>
 
-                  {order.fulfillment_type === "preorder" && (
+                  {order.fulfillment_type === "preorder" && !submittedDepositIds.includes(order.deposit_payment_id) && (
                     <p className="mt-1 text-sm font-semibold text-[var(--accent)]">
                       Deposit due: {formatMoney(order.deposit_amount)}
                     </p>
@@ -338,26 +344,26 @@ export default function CheckoutPage({ session, onCartChanged }) {
           </div>
 
           {preorderOrders.length > 0 && (
-            <section className="mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-              <p className="text-sm font-bold tracking-[0.12em] text-amber-800">
+            <section className="mt-7 rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
+              <p className="text-sm font-bold tracking-[0.12em] text-[var(--brand)]">
                 PREORDER DEPOSIT
               </p>
 
               <h2 className="mt-1 text-xl font-bold text-[var(--brand)]">
-                Transfer your 20% deposit
+                {allReceiptsSubmitted ? "Receipt submitted" : "Transfer your 20% deposit"}
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-                Use one of the active AED bank accounts below. After
-                transferring the deposit, upload your payment screenshot and
-                transaction reference for staff confirmation.
+                {allReceiptsSubmitted
+                  ? "Your deposit is awaiting confirmation."
+                  : "Use an AED bank account below, then upload your payment screenshot and transaction reference for confirmation."}
               </p>
 
-              {bankAccounts.length > 0 ? (
+              {!allReceiptsSubmitted && (bankAccounts.length > 0 ? (
                 <div className="mt-4 space-y-3">
                   {bankAccounts.map((account) => (
                     <div
-                      className="rounded-xl border border-amber-200 bg-white p-4"
+                      className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
                       key={account.id}
                     >
                       <p className="font-bold text-[var(--brand)]">
@@ -383,9 +389,9 @@ export default function CheckoutPage({ session, onCartChanged }) {
                   Bank-account details are temporarily unavailable. Please
                   contact Golden Loom Myanmar before making a transfer.
                 </p>
-              )}
+              ))}
 
-              {bankAccounts.length > 0 && (
+              {!allReceiptsSubmitted && bankAccounts.length > 0 && (
                 <div className="mt-5 space-y-4">
                   {preorderOrders.map((order) =>
                     order.deposit_payment_id ? (
@@ -394,6 +400,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
                         key={order.deposit_payment_id}
                         paymentId={order.deposit_payment_id}
                         session={session}
+                        onSubmitted={() => setSubmittedDepositIds((current) => [...new Set([...current, order.deposit_payment_id])])}
                       />
                     ) : (
                       <p

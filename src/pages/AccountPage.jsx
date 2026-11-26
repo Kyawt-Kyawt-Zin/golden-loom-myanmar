@@ -140,7 +140,7 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
 
       if (sessionData.user.role !== "customer") {
         setErrorMessage(
-          "This account uses the staff portal. Please sign in through the admin dashboard.",
+          "This account uses the admin dashboard. Please sign in there.",
         );
         return;
       }

@@ -320,11 +320,11 @@ export default function CustomerOrderDetailPage({ session }) {
       <section id="cancellation" className="mt-5 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
         <h2 className="text-lg font-bold text-[var(--brand)]">Cancellation request</h2>
         {requestLoadError ? <p className="mt-3 text-sm text-rose-700">{requestLoadError}</p> : cancellation && cancellation.status === "pending" ? (
-          <p className="mt-3 text-sm">Your cancellation request is waiting for staff review. Your order is not cancelled yet.</p>
+          <p className="mt-3 text-sm">Your cancellation request is awaiting approval. Your order is not cancelled yet.</p>
         ) : ["pending", "confirmed"].includes(order.status) ? (
           <form className="mt-3 space-y-3" onSubmit={submitCancellation}>
             {cancellation?.staff_note && <p className="text-sm">Previous request: {cancellation.staff_note}</p>}
-            <p className="text-sm">Send a request for staff to review. Your order remains active until the request is approved.</p>
+            <p className="text-sm">Send a cancellation request. Your order remains active until the request is approved.</p>
             <label className="block text-sm">Reason (optional)<textarea className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" maxLength={500} value={cancelNote} onChange={(e) => setCancelNote(e.target.value)} /></label>
             {latePreorder && <label className="flex gap-2 text-sm"><input type="checkbox" checked={acceptForfeit} onChange={(e) => setAcceptForfeit(e.target.checked)} required />The seven-day cancellation period has ended. I understand the deposit is non-refundable.</label>}
             {cancelError && <p role="alert" className="text-sm text-rose-700">{cancelError}</p>}
@@ -334,8 +334,8 @@ export default function CustomerOrderDetailPage({ session }) {
       </section>
 
       {order.fulfillment_type === "preorder" && (
-        <section className="mt-5 rounded-3xl border border-amber-200 bg-amber-50 p-6">
-          <p className="text-sm font-bold tracking-[0.14em] text-amber-800">
+        <section className="mt-5 rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-6">
+          <p className="text-sm font-bold tracking-[0.14em] text-[var(--brand)]">
             PREORDER DEPOSIT
           </p>
 
@@ -347,14 +347,14 @@ export default function CustomerOrderDetailPage({ session }) {
 
               <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                 Transfer {formatMoney(depositPayment.amount)} to an account
-                below, then upload the receipt for staff verification.
+                below, then upload the receipt for confirmation.
               </p>
 
               {bankAccounts.length > 0 ? (
                 <div className="mt-5 space-y-3">
                   {bankAccounts.map((account) => (
                     <div
-                      className="rounded-xl border border-amber-200 bg-white p-4"
+                      className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4"
                       key={account.id}
                     >
                       <p className="font-bold text-[var(--brand)]">
@@ -391,7 +391,7 @@ export default function CustomerOrderDetailPage({ session }) {
 
           {isDepositSubmitted && (
             <p className="mt-3 rounded-xl bg-white p-4 text-sm font-semibold text-amber-900">
-              Your receipt was submitted and is waiting for staff verification.
+              Thank you! Your receipt was submitted and is awaiting confirmation.
             </p>
           )}
 

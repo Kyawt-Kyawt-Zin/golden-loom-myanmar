@@ -31,7 +31,7 @@ export default function VariantChangeRequest({ item, order, token }) {
     setMessage("");
     try {
       await requestVariantChange(token, order.id, item.id, selected);
-      setMessage("Your change request was sent for staff review. Your current variant remains unchanged until approved.");
+      setMessage("Your change request is awaiting approval. Your current variant remains unchanged until approved.");
       setOptions(null);
     } catch (error) {
       setMessage(error.message || "Unable to send your request.");
