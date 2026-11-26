@@ -86,7 +86,7 @@ export default function StoreHeader({
             title={session ? "Your account" : "Sign in"}
           >
             <UserRound size={18} />
-            {session && <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[var(--page-bg)] bg-emerald-500" />}
+
             <span className="hidden text-sm font-semibold sm:inline">
               {session ? session.user.full_name.split(" ")[0] : "Sign in"}
             </span>
@@ -138,7 +138,9 @@ export default function StoreHeader({
       </div>
 
       <div className="border-t border-[var(--border)] px-3 py-1.5 text-xs text-[var(--text-muted)] sm:hidden">
-        {session ? `Signed in as ${session.user.full_name}` : "Browsing as a guest · Sign in to view your account"}
+        {session
+          ? `Signed in as ${session.user.full_name}`
+          : "Browsing as a guest · Sign in to view your account"}
       </div>
 
       {isMobileMenuOpen && (
