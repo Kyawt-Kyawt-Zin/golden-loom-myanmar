@@ -27,6 +27,10 @@ const formatGender = (gender) => {
 };
 
 const availabilityLabel = (product) => {
+  if (!product.has_in_stock && !product.has_preorder) {
+    return "Out of stock";
+  }
+
   if (product.has_in_stock && product.has_preorder) {
     return "In stock & preorder";
   }
@@ -298,10 +302,14 @@ export default function ShopPage() {
 
                       <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--border)] pt-4">
                         <p className="font-bold text-[var(--brand)]">
-                          From {formatPrice(product.starting_price)}
+                          {product.starting_price == null
+                            ? "Currently unavailable"
+                            : `From ${formatPrice(product.starting_price)}`}
                         </p>
                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--brand)]">
-                          <PackageCheck size={16} />
+                          {(product.has_in_stock || product.has_preorder) && (
+                            <PackageCheck size={16} />
+                          )}
                           {availabilityLabel(product)}
                         </span>
                       </div>

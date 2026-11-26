@@ -18,7 +18,17 @@ const formatPrice = (price) => {
 const formatGender = (gender) =>
   `${gender.slice(0, 1).toUpperCase()}${gender.slice(1)}`;
 
+const isVariantOutOfStock = (variant) =>
+  Boolean(
+    variant &&
+    variant.fulfillment_type === "in_stock" &&
+    Number(variant.stock_quantity) <= 0,
+  );
+
 const getAvailabilityMessage = (variant) => {
+  if (isVariantOutOfStock(variant)) {
+    return "Currently out of stock";
+  }
   if (variant.fulfillment_type === "in_stock") {
     return `In stock in Dubai · ${variant.stock_quantity} available`;
   }
@@ -70,6 +80,8 @@ export default function ProductDetailPage({ session, onCartChanged }) {
   }, [slug]);
 
   const variants = catalogProduct?.variants || [];
+  const allVariantsOutOfStock =
+    variants.length > 0 && variants.every(isVariantOutOfStock);
 
   const colors = [
     ...new Set([
@@ -100,6 +112,20 @@ export default function ProductDetailPage({ session, onCartChanged }) {
 
     return images.find((image) => image.id === selectedImageId) || images[0];
   }, [catalogProduct?.images, selectedImageId]);
+  const selectedImageVariant =
+    selectedImage?.product_variant_id == null
+      ? null
+      : variants.find(
+          (variant) =>
+            Number(variant.id) === Number(selectedImage.product_variant_id),
+        );
+
+  const showThumbnailStockMessage =
+    !allVariantsOutOfStock &&
+    selectedImageVariant &&
+    selectedColor === selectedImageVariant.color &&
+    !selectedSize &&
+    isVariantOutOfStock(selectedImageVariant);
 
   const handleColorSelection = (color) => {
     const linkedImage = catalogProduct?.images.find((image) =>
@@ -147,7 +173,7 @@ export default function ProductDetailPage({ session, onCartChanged }) {
   };
 
   const handleAddToCart = async () => {
-    if (!selectedVariant) {
+    if (!selectedVariant || isVariantOutOfStock(selectedVariant)) {
       return;
     }
 
@@ -297,6 +323,25 @@ export default function ProductDetailPage({ session, onCartChanged }) {
             {product.description || "A Golden Loom Myanmar sweater."}
           </p>
 
+          {allVariantsOutOfStock && (
+            <p
+              role="status"
+              className="mt-5 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900"
+            >
+              All options for this sweater are currently out of stock.
+            </p>
+          )}
+
+          {showThumbnailStockMessage && (
+            <p
+              role="status"
+              className="mt-5 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900"
+            >
+              {selectedImageVariant.color} · {selectedImageVariant.size} is
+              currently out of stock.
+            </p>
+          )}
+
           <div className="mt-7 border-y border-[var(--border)] py-6">
             <p className="text-sm font-bold text-[var(--text-main)]">
               Choose colour
@@ -369,7 +414,9 @@ export default function ProductDetailPage({ session, onCartChanged }) {
               </div>
 
               <p className="mt-4 flex items-start gap-2 text-sm font-medium text-[var(--text-main)]">
-                {selectedVariant.fulfillment_type === "in_stock" ? (
+                {isVariantOutOfStock(
+                  selectedVariant,
+                ) ? null : selectedVariant.fulfillment_type === "in_stock" ? (
                   <PackageCheck
                     className="mt-0.5 shrink-0 text-emerald-700"
                     size={18}
@@ -405,17 +452,21 @@ export default function ProductDetailPage({ session, onCartChanged }) {
 
               <button
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isAddingToCart}
+                disabled={
+                  isAddingToCart || isVariantOutOfStock(selectedVariant)
+                }
                 onClick={handleAddToCart}
                 type="button"
               >
                 <ShoppingBag size={18} />
 
-                {!session
-                  ? "Sign in to add to cart"
-                  : isAddingToCart
-                    ? "Adding to cart..."
-                    : "Add to cart"}
+                {isVariantOutOfStock(selectedVariant)
+                  ? "Out of stock"
+                  : !session
+                    ? "Sign in to add to cart"
+                    : isAddingToCart
+                      ? "Adding to cart..."
+                      : "Add to cart"}
               </button>
             </section>
           ) : (
