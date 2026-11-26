@@ -1,7 +1,11 @@
 import { Eye, EyeOff, LogOut, Package, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { deleteMyAccount, loginCustomer, registerCustomer } from "../services/api.js";
+import {
+  deleteMyAccount,
+  loginCustomer,
+  registerCustomer,
+} from "../services/api.js";
 
 const initialForm = {
   fullName: "",
@@ -158,15 +162,79 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
             <p className="mt-5 text-sm font-semibold text-[var(--brand)]">
               Profile editing will be available here next.
             </p>
-            <button type="button" onClick={() => setShowDeleteConfirmation(true)} className="mt-5 text-sm font-semibold text-rose-700 underline">Delete account</button>
-            {showDeleteConfirmation && <form onSubmit={handleDeleteAccount} className="mt-4 space-y-3 rounded-xl border border-rose-200 p-4" aria-label="Confirm account deletion">
-              <h3 className="font-bold text-rose-700">Delete your account?</h3>
-              <p className="text-sm text-[var(--text-muted)]">Your profile will be anonymized and you will be signed out. Order and payment records, including delivery details, will be retained. You cannot register again with the same email. If you have an active order, contact the shop first; deletion is unavailable until it is complete or cancelled.</p>
-              <label className="block text-sm">Your password<input className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" type="password" autoComplete="current-password" required value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} /></label>
-              <label className="flex gap-2 text-sm"><input type="checkbox" required checked={deleteAcknowledged} onChange={(event) => setDeleteAcknowledged(event.target.checked)} />I understand the consequences and want to delete my account.</label>
-              {deleteError && <p role="alert" className="text-sm text-rose-700">{deleteError}</p>}
-              <div className="flex flex-wrap gap-3"><button type="submit" disabled={deleting} className="rounded-xl bg-rose-700 px-4 py-2 font-semibold text-white disabled:opacity-60">{deleting ? "Deleting…" : "Confirm deletion"}</button><button type="button" disabled={deleting} onClick={() => { setShowDeleteConfirmation(false); setDeletePassword(""); setDeleteError(""); setDeleteAcknowledged(false); }} className="rounded-xl border border-[var(--border)] px-4 py-2">Keep my account</button></div>
-            </form>}
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirmation(true)}
+              className="mt-5 text-sm font-semibold text-rose-700 underline"
+            >
+              Delete account
+            </button>
+            {showDeleteConfirmation && (
+              <form
+                onSubmit={handleDeleteAccount}
+                className="mt-4 space-y-3 rounded-xl border border-rose-200 p-4"
+                aria-label="Confirm account deletion"
+              >
+                <h3 className="font-bold text-rose-700">
+                  Delete your account?
+                </h3>
+                <p className="text-sm text-[var(--text-muted)]">
+                  Your profile will be signed out and can't register with the
+                  same email again. If you have an active order, contact the
+                  shop first; deletion is unavailable until it is complete or
+                  cancelled.
+                </p>
+                <label className="block text-sm">
+                  Your password
+                  <input
+                    className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    value={deletePassword}
+                    onChange={(event) => setDeletePassword(event.target.value)}
+                  />
+                </label>
+                <label className="flex gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={deleteAcknowledged}
+                    onChange={(event) =>
+                      setDeleteAcknowledged(event.target.checked)
+                    }
+                  />
+                  I understand the consequences and want to delete my account.
+                </label>
+                {deleteError && (
+                  <p role="alert" className="text-sm text-rose-700">
+                    {deleteError}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="submit"
+                    disabled={deleting}
+                    className="rounded-xl bg-rose-700 px-4 py-2 font-semibold text-white disabled:opacity-60"
+                  >
+                    {deleting ? "Deleting…" : "Confirm deletion"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={() => {
+                      setShowDeleteConfirmation(false);
+                      setDeletePassword("");
+                      setDeleteError("");
+                      setDeleteAcknowledged(false);
+                    }}
+                    className="rounded-xl border border-[var(--border)] px-4 py-2"
+                  >
+                    Keep my account
+                  </button>
+                </div>
+              </form>
+            )}
           </section>
 
           <button
@@ -210,7 +278,14 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 items-center px-4 py-10 sm:px-6 lg:px-8">
       <section className="mx-auto w-full max-w-lg rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm sm:p-9">
-        {deleted && <p role="status" className="mb-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">Your profile was deleted and you have been signed out.</p>}
+        {deleted && (
+          <p
+            role="status"
+            className="mb-5 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800"
+          >
+            Your profile was deleted and you have been signed out.
+          </p>
+        )}
         <p className="text-sm font-bold tracking-[0.14em] text-[var(--accent)]">
           CUSTOMER ACCOUNT
         </p>
