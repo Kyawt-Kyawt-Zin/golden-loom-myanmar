@@ -1,46 +1,35 @@
-import { useState } from "react";
-
-const storageKey = "golden-loom-customer-session";
-
-const readStoredSession = () => {
-  try {
-    const storedValue = window.localStorage.getItem(storageKey);
-
-    if (!storedValue) {
-      return null;
-    }
-
-    const session = JSON.parse(storedValue);
-
-    if (!session?.token || !session?.user) {
-      window.localStorage.removeItem(storageKey);
-      return null;
-    }
-
-    return session;
-  } catch {
-    window.localStorage.removeItem(storageKey);
-    return null;
-  }
-};
+import { useCallback, useEffect, useState } from "react";
+import {
+  clearCustomerSession,
+  readCustomerSession,
+  saveCustomerSession,
+} from "../services/customer-session.js";
 
 export default function useCustomerSession() {
-  const [session, setSession] = useState(readStoredSession);
+  const [session, setSession] = useState(readCustomerSession);
 
-  const startSession = (sessionData) => {
-    const nextSession = {
+  useEffect(() => {
+    const syncSession = () => setSession(readCustomerSession());
+
+    window.addEventListener("customer-session-changed", syncSession);
+    window.addEventListener("storage", syncSession);
+
+    return () => {
+      window.removeEventListener("customer-session-changed", syncSession);
+      window.removeEventListener("storage", syncSession);
+    };
+  }, []);
+
+  const startSession = useCallback((sessionData) => {
+    saveCustomerSession({
       token: sessionData.token,
       user: sessionData.user,
-    };
+    });
+  }, []);
 
-    window.localStorage.setItem(storageKey, JSON.stringify(nextSession));
-    setSession(nextSession);
-  };
-
-  const endSession = () => {
-    window.localStorage.removeItem(storageKey);
-    setSession(null);
-  };
+  const endSession = useCallback(() => {
+    clearCustomerSession();
+  }, []);
 
   return {
     session,

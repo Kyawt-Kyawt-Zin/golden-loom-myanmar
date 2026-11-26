@@ -5,6 +5,7 @@ import {
   deleteMyAccount,
   loginCustomer,
   registerCustomer,
+  logoutCustomer,
 } from "../services/api.js";
 
 const initialForm = {
@@ -31,6 +32,32 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
+
+  const handleSignOut = async () => {
+    setSignOutError("");
+    setSigningOut(true);
+
+    const signOut = async () => {
+      await logoutCustomer();
+      onSessionEnd();
+    };
+
+    try {
+      if (navigator.locks) {
+        await navigator.locks.request("golden-loom-customer-session", signOut);
+      } else {
+        await signOut();
+      }
+    } catch {
+      setSignOutError(
+        "Unable to sign out. Please check your connection and try again.",
+      );
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   const handleDeleteAccount = async (event) => {
     event.preventDefault();
@@ -261,13 +288,20 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
           </button>
         </div>
 
+        {signOutError && (
+          <p role="alert" className="mt-6 text-sm text-red-700">
+            {signOutError}
+          </p>
+        )}
+
         <button
-          className="mt-8 inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-3 font-semibold text-red-700 transition hover:bg-red-50"
-          onClick={onSessionEnd}
+          className="mt-8 inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-3 font-semibold text-red-700 transition hover:opacity-80 disabled:opacity-60"
+          onClick={handleSignOut}
+          disabled={signingOut}
           type="button"
         >
           <LogOut size={18} />
-          Sign out
+          {signingOut ? "Signing out…" : "Sign out"}
         </button>
       </main>
     );

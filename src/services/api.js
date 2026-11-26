@@ -1,5 +1,23 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+import {
+  clearCustomerSession,
+  readCustomerSession,
+  saveCustomerSession,
+} from "./customer-session.js";
+
+const API_BASE_URL = "/api";
+
+const getTokenUserId = (token) => {
+  try {
+    const payload = token
+      .split(".")[1]
+      .replaceAll("-", "+")
+      .replaceAll("_", "/");
+
+    return JSON.parse(atob(payload)).userId;
+  } catch {
+    return null;
+  }
+};
 
 const request = async (path, options = {}) => {
   const isFormData = options.body instanceof FormData;
@@ -9,17 +27,65 @@ const request = async (path, options = {}) => {
       : {}),
     ...options.headers,
   };
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+
+  const authorization = headers.Authorization;
+  const isAuthenticated = authorization?.startsWith("Bearer ");
+  let sessionAtStart = null;
+
+  if (isAuthenticated) {
+    const suppliedToken = authorization.slice("Bearer ".length);
+    sessionAtStart = readCustomerSession();
+
+    if (
+      !sessionAtStart ||
+      String(getTokenUserId(suppliedToken)) !== String(sessionAtStart.user.id)
+    ) {
+      throw new Error("Please sign in again.");
+    }
+
+    // Use the latest token if another request has already renewed it.
+    headers.Authorization = `Bearer ${sessionAtStart.token}`;
+  }
+
+  let response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
   });
+
+  if (response.status === 401 && sessionAtStart) {
+    const renewedToken = await renewCustomerSession(
+      sessionAtStart.token,
+      sessionAtStart.user.id,
+    );
+
+    const latestSession = readCustomerSession();
+
+    if (
+      !renewedToken ||
+      !latestSession ||
+      String(latestSession.user.id) !== String(sessionAtStart.user.id)
+    ) {
+      throw new Error("Your session has expired. Please sign in again.");
+    }
+
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        ...headers,
+        Authorization: `Bearer ${latestSession.token}`,
+      },
+    });
+  }
+
   const contentType = response.headers.get("content-type") || "";
   const result = contentType.includes("application/json")
     ? await response.json()
     : null;
 
   if (!response.ok) {
-    throw new Error(result?.message || "Something went wrong");
+    const error = new Error(result?.message || "Something went wrong");
+    error.status = response.status;
+    throw error;
   }
 
   return result?.data;
@@ -54,6 +120,7 @@ export const getCatalogProductBySlug = async (slug) => {
 export const registerCustomer = async (customer) => {
   return request("/auth/register", {
     method: "POST",
+    headers: { "X-Customer-Session": "refresh" },
     body: JSON.stringify(customer),
   });
 };
@@ -61,15 +128,97 @@ export const registerCustomer = async (customer) => {
 export const loginCustomer = async ({ email, password }) => {
   return request("/auth/login", {
     method: "POST",
+    headers: { "X-Customer-Session": "refresh" },
     body: JSON.stringify({ email, password }),
   });
 };
 
-export const deleteMyAccount = async (token, password) => request("/auth/me", {
-  method: "DELETE",
-  headers: { Authorization: `Bearer ${token}` },
-  body: JSON.stringify({ password }),
-});
+export const refreshCustomerSession = async () => {
+  return request("/auth/refresh", {
+    method: "POST",
+  });
+};
+
+export const logoutCustomer = async () => {
+  return request("/auth/logout", {
+    method: "POST",
+  });
+};
+
+let pendingCustomerRefresh = null;
+
+export const renewCustomerSession = async (previousToken, userId) => {
+  if (!navigator.locks) {
+    throw new Error(
+      "Automatic session renewal is unavailable in this browser.",
+    );
+  }
+
+  if (pendingCustomerRefresh) {
+    return pendingCustomerRefresh;
+  }
+
+  const renew = async () => {
+    const current = readCustomerSession();
+
+    if (!current || current.user.id !== userId) {
+      return null;
+    }
+
+    // Another tab may already have renewed the session.
+    if (current.token !== previousToken) {
+      return current.token;
+    }
+
+    try {
+      const renewed = await refreshCustomerSession();
+      const latest = readCustomerSession();
+
+      // Do not restore a session that was cleared or replaced.
+      if (!latest || latest.user.id !== userId) {
+        return null;
+      }
+
+      if (latest.token !== previousToken) {
+        return latest.token;
+      }
+
+      saveCustomerSession({
+        token: renewed.token,
+        user: renewed.user,
+      });
+
+      return renewed.token;
+    } catch (error) {
+      const latest = readCustomerSession();
+
+      if (
+        error.status === 401 &&
+        latest?.user.id === userId &&
+        latest.token === previousToken
+      ) {
+        clearCustomerSession();
+      }
+
+      throw error;
+    }
+  };
+
+  pendingCustomerRefresh = navigator.locks
+    .request("golden-loom-customer-session", renew)
+    .finally(() => {
+      pendingCustomerRefresh = null;
+    });
+
+  return pendingCustomerRefresh;
+};
+
+export const deleteMyAccount = async (token, password) =>
+  request("/auth/me", {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ password }),
+  });
 
 export const getMyCart = async (token) => {
   return request("/cart", {
@@ -158,21 +307,44 @@ export const schedulePickup = async (token, orderId, date, time) => {
   });
 };
 
-export const getMyOrderChangeRequests = async (token) => request("/order-change-requests/my", {
-  headers: { Authorization: `Bearer ${token}` },
-});
+export const getMyOrderChangeRequests = async (token) =>
+  request("/order-change-requests/my", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-export const requestOrderCancellation = async (token, orderId, customerNote, acceptDepositForfeit) => request("/order-change-requests", {
-  method: "POST",
-  headers: { Authorization: `Bearer ${token}` },
-  body: JSON.stringify({ orderId: Number(orderId), requestType: "cancel_order", customerNote, acceptDepositForfeit }),
-});
+export const requestOrderCancellation = async (
+  token,
+  orderId,
+  customerNote,
+  acceptDepositForfeit,
+) =>
+  request("/order-change-requests", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      orderId: Number(orderId),
+      requestType: "cancel_order",
+      customerNote,
+      acceptDepositForfeit,
+    }),
+  });
 
-export const requestVariantChange = async (token, orderId, orderItemId, requestedVariantId) => request("/order-change-requests", {
-  method: "POST",
-  headers: { Authorization: `Bearer ${token}` },
-  body: JSON.stringify({ orderId: Number(orderId), orderItemId: Number(orderItemId), requestedVariantId: Number(requestedVariantId), requestType: "change_variant" }),
-});
+export const requestVariantChange = async (
+  token,
+  orderId,
+  orderItemId,
+  requestedVariantId,
+) =>
+  request("/order-change-requests", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      orderId: Number(orderId),
+      orderItemId: Number(orderItemId),
+      requestedVariantId: Number(requestedVariantId),
+      requestType: "change_variant",
+    }),
+  });
 
 export const getActiveBankAccounts = async () => {
   return request("/bank-accounts");

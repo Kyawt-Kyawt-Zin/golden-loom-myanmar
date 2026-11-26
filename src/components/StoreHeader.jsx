@@ -93,7 +93,13 @@ export default function StoreHeader({
 
           <NavLink
             to="/cart"
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] text-white transition hover:bg-[var(--brand-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2"
+            className={({ isActive }) =>
+              `relative inline-flex h-10 w-10 items-center justify-center rounded-full border text-[var(--brand)] transition hover:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2 ${
+                isActive
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                  : "border-[var(--border)] bg-[var(--surface)]"
+              }`
+            }
             aria-label={
               cartItemCount > 0
                 ? `Open shopping cart with ${cartItemCount} item${
