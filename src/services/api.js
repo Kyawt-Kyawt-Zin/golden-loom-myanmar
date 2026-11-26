@@ -213,6 +213,13 @@ export const renewCustomerSession = async (previousToken, userId) => {
   return pendingCustomerRefresh;
 };
 
+export const updateMyProfile = async (token, profile) =>
+  request("/auth/me", {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(profile),
+  });
+
 export const deleteMyAccount = async (token, password) =>
   request("/auth/me", {
     method: "DELETE",

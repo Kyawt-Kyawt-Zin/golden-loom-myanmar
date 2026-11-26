@@ -6,7 +6,9 @@ import {
   loginCustomer,
   registerCustomer,
   logoutCustomer,
+  updateMyProfile,
 } from "../services/api.js";
+import { readCustomerSession } from "../services/customer-session.js";
 
 const initialForm = {
   fullName: "",
@@ -34,6 +36,48 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
   const [deleted, setDeleted] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState("");
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ fullName: "", phone: "" });
+  const [profileError, setProfileError] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  const beginProfileEdit = () => {
+    setProfileForm({ fullName: session.user.full_name || "", phone: session.user.phone || "" });
+    setProfileError("");
+    setProfileMessage("");
+    setEditingProfile(true);
+  };
+
+  const handleProfileSave = async (event) => {
+    event.preventDefault();
+    const fullName = profileForm.fullName.trim();
+    const phone = profileForm.phone.trim();
+    if (!fullName || fullName.length > 100) {
+      setProfileError("Enter a name of 1 to 100 characters.");
+      return;
+    }
+    if (phone && !phoneIsValid(phone)) {
+      setProfileError("Phone number must contain 7 to 15 digits and may start with +.");
+      return;
+    }
+    setProfileSaving(true);
+    setProfileError("");
+    try {
+      const user = await updateMyProfile(session.token, { fullName, phone });
+      const latest = readCustomerSession();
+      // Do not restore a session if the customer signed out while saving.
+      if (latest && String(latest.user.id) === String(user.id)) {
+        onSessionStart({ ...latest, user });
+        setProfileMessage("Your profile has been updated.");
+        setEditingProfile(false);
+      }
+    } catch (error) {
+      setProfileError(error.message || "Unable to update your profile.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const handleSignOut = async () => {
     setSignOutError("");
@@ -186,9 +230,27 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
               {session.user.phone ? ` · ${session.user.phone}` : ""}
             </p>
 
-            <p className="mt-5 text-sm font-semibold text-[var(--brand)]">
-              Profile editing will be available here next.
-            </p>
+            {profileMessage && <p role="status" className="mt-4 text-sm font-semibold text-[var(--brand)]">{profileMessage}</p>}
+            {editingProfile ? (
+              <form onSubmit={handleProfileSave} className="mt-5 space-y-4" aria-label="Edit profile">
+                <label className="block text-sm font-semibold text-[var(--text-main)]">
+                  Full name
+                  <input className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-[var(--text-main)]" autoComplete="name" maxLength={100} required value={profileForm.fullName} onChange={(event) => setProfileForm((current) => ({ ...current, fullName: event.target.value }))} />
+                </label>
+                <label className="block text-sm font-semibold text-[var(--text-main)]">
+                  Phone number <span className="font-normal text-[var(--text-muted)]">(optional)</span>
+                  <input className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-[var(--text-main)]" autoComplete="tel" inputMode="tel" maxLength={16} value={profileForm.phone} onChange={(event) => setProfileForm((current) => ({ ...current, phone: event.target.value }))} />
+                </label>
+                <p className="text-sm text-[var(--text-muted)]">To change your email address, please contact us.</p>
+                {profileError && <p role="alert" className="text-sm text-[var(--danger)]">{profileError}</p>}
+                <div className="flex flex-wrap gap-3">
+                  <button type="submit" disabled={profileSaving} className="rounded-xl bg-[var(--brand)] px-4 py-2 font-semibold text-[var(--on-brand)] disabled:opacity-60">{profileSaving ? "Saving…" : "Save changes"}</button>
+                  <button type="button" disabled={profileSaving} onClick={() => { setEditingProfile(false); setProfileError(""); }} className="rounded-xl border border-[var(--border)] px-4 py-2 font-semibold text-[var(--text-main)] disabled:opacity-60">Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <button type="button" onClick={beginProfileEdit} className="mt-5 block text-sm font-semibold text-[var(--brand)] underline">Edit profile</button>
+            )}
             <button
               type="button"
               onClick={() => setShowDeleteConfirmation(true)}
