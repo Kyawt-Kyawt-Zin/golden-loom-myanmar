@@ -4,6 +4,7 @@ import {
   submitDepositPaymentProof,
   submitDepositPaymentProofToS3,
 } from "../services/api.js";
+import { submitExistingOrderReceipt } from "../helper/receipt-upload.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -22,6 +23,7 @@ export default function DepositProofUpload({
   paymentId,
   session,
   onSubmitted,
+  onSubmitProof,
 }) {
   const [transactionReference, setTransactionReference] = useState("");
   const [paymentProof, setPaymentProof] = useState(null);
@@ -86,15 +88,20 @@ export default function DepositProofUpload({
       setErrorMessage("");
       setIsSubmitting(true);
 
-      const submitReceipt =
-        import.meta.env.VITE_RECEIPT_UPLOAD_DRIVER === "s3"
-          ? submitDepositPaymentProofToS3
-          : submitDepositPaymentProof;
-
-      const result = await submitReceipt(session.token, paymentId, {
+      const details = {
         transactionReference: transactionReference.trim(),
         paymentProof,
-      });
+      };
+      let result;
+      if (onSubmitProof) {
+        result = await onSubmitProof(details);
+      } else {
+        result = await submitExistingOrderReceipt({
+          driver: import.meta.env.VITE_RECEIPT_UPLOAD_DRIVER,
+          submitLocal: () => submitDepositPaymentProof(session.token, paymentId, details),
+          submitS3: () => submitDepositPaymentProofToS3(session.token, paymentId, details),
+        });
+      }
 
       setSuccessMessage(
         "Thank you! Your receipt has been submitted and is awaiting confirmation.",

@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { getCatalogProductBySlug, requestVariantChange } from "../services/api.js";
 
@@ -43,7 +44,7 @@ export default function VariantChangeRequest({ item, order, token }) {
   return <div className="mt-2 text-sm">
     <button type="button" disabled={busy} onClick={loadOptions} className="font-semibold text-[var(--brand)] underline disabled:opacity-60">Request a colour or size change</button>
     {options && (options.length ? <form onSubmit={submit} className="mt-2 space-y-2">
-      <label className="block">Choose a new variant<select required value={selected} onChange={(event) => setSelected(event.target.value)} className="mt-1 block w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2"><option value="">Select colour and size</option>{options.map((variant) => <option key={variant.id} value={variant.id}>{variant.color} · {variant.size}</option>)}</select></label>
+      <label className="block">Choose a new variant<span className="relative mt-1 block"><select required value={selected} onChange={(event) => setSelected(event.target.value)} className="block w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 appearance-none pr-10"><option value="">Select colour and size</option>{options.map((variant) => <option key={variant.id} value={variant.id}>{variant.color} · {variant.size}</option>)}</select><ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--brand)]" size={18} /></span></label>
       <button disabled={busy} className="rounded-xl bg-[var(--brand)] px-3 py-2 font-semibold text-white disabled:opacity-60" type="submit">Send change request</button>
     </form> : <p className="mt-2">No other matching variants are currently available. Please contact us for help.</p>)}
     {message && <p role="status" className="mt-2">{message}</p>}

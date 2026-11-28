@@ -1,12 +1,13 @@
 import {
   ArrowLeft,
   CalendarDays,
+  ChevronDown,
   CreditCard,
   MapPin,
   Package,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import DepositProofUpload from "../components/DepositProofUpload.jsx";
 import VariantChangeRequest from "../components/VariantChangeRequest.jsx";
 import { getActiveBankAccounts, getMyOrderById, schedulePickup, getMyOrderChangeRequests, requestOrderCancellation } from "../services/api.js";
@@ -30,12 +31,13 @@ const formatDate = (value) => {
 };
 
 const formatLabel = (value) =>
-  String(value || "")
+  value === "deposit_submitted" ? "Receipt submitted · awaiting confirmation" : String(value || "")
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function CustomerOrderDetailPage({ session }) {
   const { orderId } = useParams();
+  const location = useLocation();
   const [orderDetails, setOrderDetails] = useState(null);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,10 +109,10 @@ export default function CustomerOrderDetailPage({ session }) {
   }, [loadOrder]);
 
   useEffect(() => {
-    if (!isLoading && orderDetails && window.location.hash === "#cancellation") {
-      document.getElementById("cancellation")?.scrollIntoView();
+    if (!isLoading && orderDetails && ["#cancellation", "#pickup"].includes(location.hash)) {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView();
     }
-  }, [isLoading, orderDetails]);
+  }, [isLoading, orderDetails, location.hash]);
 
   if (!session) {
     return (
@@ -122,6 +124,7 @@ export default function CustomerOrderDetailPage({ session }) {
           <Link
             className="mt-6 inline-flex rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white"
             to="/account"
+            state={{ from: { pathname: location.pathname, search: location.search, hash: location.hash } }}
           >
             Sign in
           </Link>
@@ -226,7 +229,7 @@ export default function CustomerOrderDetailPage({ session }) {
       </section>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
+        <section id="pickup" className="scroll-mt-32 rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
           <div className="flex items-center gap-3">
             <MapPin className="text-[var(--accent)]" size={20} />
             <h2 className="text-lg font-bold text-[var(--brand)]">
@@ -254,9 +257,9 @@ export default function CustomerOrderDetailPage({ session }) {
                     <legend className="font-semibold">Pickup time</legend>
                     <p className="mt-1">Pickup hours: 9:00 AM–3:00 PM Dubai time.</p>
                     <div className="mt-2 flex items-end gap-3">
-                      <label className="flex-1">Hour<select className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" value={pickupHour} onChange={(e) => { setPickupHour(e.target.value); if (e.target.value === "15") setPickupMinute("00"); }} required><option value="">Choose hour</option>{[9, 10, 11, 12, 13, 14, 15].map((hour) => <option value={String(hour).padStart(2, "0")} key={hour}>{hour > 12 ? hour - 12 : hour} {hour < 12 ? "AM" : "PM"}</option>)}</select></label>
+                      <label className="flex-1">Hour<span className="relative mt-1 block"><select className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 appearance-none pr-10" value={pickupHour} onChange={(e) => { setPickupHour(e.target.value); if (e.target.value === "15") setPickupMinute("00"); }} required><option value="">Choose hour</option>{[9, 10, 11, 12, 13, 14, 15].map((hour) => <option value={String(hour).padStart(2, "0")} key={hour}>{hour > 12 ? hour - 12 : hour} {hour < 12 ? "AM" : "PM"}</option>)}</select><ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--brand)]" size={18} /></span></label>
                       <span className="pb-3 font-bold">:</span>
-                      <label className="flex-1">Minute<select className="mt-1 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3" value={pickupMinute} onChange={(e) => setPickupMinute(e.target.value)}>{Array.from({ length: pickupHour === "15" ? 1 : 60 }, (_, minute) => <option value={String(minute).padStart(2, "0")} key={minute}>{String(minute).padStart(2, "0")}</option>)}</select></label>
+                      <label className="flex-1">Minute<span className="relative mt-1 block"><select className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 appearance-none pr-10" value={pickupMinute} onChange={(e) => setPickupMinute(e.target.value)}>{Array.from({ length: pickupHour === "15" ? 1 : 60 }, (_, minute) => <option value={String(minute).padStart(2, "0")} key={minute}>{String(minute).padStart(2, "0")}</option>)}</select><ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--brand)]" size={18} /></span></label>
                     </div>
                   </fieldset>
                   {pickupError && <p role="alert" className="text-rose-700">{pickupError}</p>}

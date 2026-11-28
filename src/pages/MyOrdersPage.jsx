@@ -48,6 +48,9 @@ const getCustomerOrderStatus = (status) => {
 };
 
 const getCustomerPaymentLabel = (order) => {
+  if (order.payment_status === "deposit_submitted") {
+    return "Receipt submitted · awaiting confirmation";
+  }
   if (
     order.payment_status === "unpaid" &&
     order.payment_method === "cash_on_delivery"
@@ -70,7 +73,7 @@ const getPaymentStyle = (paymentStatus) => {
     return "bg-emerald-100 text-emerald-800";
   }
 
-  if (paymentStatus === "deposit_pending") {
+  if (paymentStatus === "deposit_pending" || paymentStatus === "deposit_submitted") {
     return "bg-amber-100 text-amber-900";
   }
 

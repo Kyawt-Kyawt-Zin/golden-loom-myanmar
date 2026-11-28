@@ -83,6 +83,7 @@ function App() {
             path="/shop/:slug"
             element={
               <ProductDetailPage
+                key={session?.user?.id ?? "guest"}
                 onCartChanged={handleCartChanged}
                 session={session}
               />
@@ -125,6 +126,7 @@ function App() {
             path="/checkout"
             element={
               <CheckoutPage
+                key={session?.user?.id ?? "guest"}
                 onCartChanged={handleCartChanged}
                 session={session}
               />

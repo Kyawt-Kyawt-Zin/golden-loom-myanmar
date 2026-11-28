@@ -1,10 +1,13 @@
-import { ShoppingBag, Check, Clock3, PackageCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ShoppingBag, Check, Clock3, PackageCheck, Minus, Plus } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   addItemToCart,
   getCatalogImageUrl,
   getCatalogProductBySlug,
+  getMyCart,
+  removeCartItem,
+  updateCartItemQuantity,
 } from "../services/api.js";
 
 const formatPrice = (price) => {
@@ -48,6 +51,40 @@ export default function ProductDetailPage({ session, onCartChanged }) {
   const [cartMessage, setCartMessage] = useState("");
   const [cartErrorMessage, setCartErrorMessage] = useState("");
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [cartData, setCartData] = useState(null);
+  const [isCartLoading, setIsCartLoading] = useState(Boolean(session?.token));
+  const [cartLoadError, setCartLoadError] = useState("");
+  const [cartReloadKey, setCartReloadKey] = useState(0);
+  const cartRequestVersion = useRef(0);
+  const currentCustomerId = useRef(session?.user?.id);
+  currentCustomerId.current = session?.user?.id;
+
+  useEffect(() => {
+    const version = ++cartRequestVersion.current;
+    let active = true;
+    if (!session?.token) {
+      setCartData(null);
+      setCartLoadError("");
+      setIsCartLoading(false);
+      return () => { active = false; };
+    }
+
+    setIsCartLoading(true);
+    setCartLoadError("");
+    getMyCart(session.token)
+      .then((cart) => {
+        if (active && version === cartRequestVersion.current) setCartData(cart);
+      })
+      .catch((error) => {
+        if (active && version === cartRequestVersion.current) {
+          setCartLoadError(error.message || "Unable to load your cart.");
+        }
+      })
+      .finally(() => {
+        if (active && version === cartRequestVersion.current) setIsCartLoading(false);
+      });
+    return () => { active = false; };
+  }, [session?.token, session?.user?.id, cartReloadKey]);
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -106,6 +143,16 @@ export default function ProductDetailPage({ session, onCartChanged }) {
     (variant) =>
       variant.color === selectedColor && variant.size === selectedSize,
   );
+  const selectedCartItem = cartData?.items?.find(
+    (item) => Number(item.product_variant_id) === Number(selectedVariant?.id),
+  );
+  const cannotIncrease = selectedCartItem && selectedVariant?.fulfillment_type === "in_stock" &&
+    Number(selectedCartItem.quantity) >= Number(selectedVariant.stock_quantity);
+
+  useEffect(() => {
+    setCartMessage("");
+    setCartErrorMessage("");
+  }, [selectedVariant?.id]);
 
   const selectedImage = useMemo(() => {
     const images = catalogProduct?.images || [];
@@ -192,6 +239,10 @@ export default function ProductDetailPage({ session, onCartChanged }) {
         quantity: 1,
       });
 
+      if (currentCustomerId.current !== session.user?.id) return;
+      cartRequestVersion.current += 1;
+      setCartData(updatedCart);
+      setIsCartLoading(false);
       onCartChanged?.(updatedCart);
 
       setCartMessage(
@@ -201,6 +252,31 @@ export default function ProductDetailPage({ session, onCartChanged }) {
       setCartErrorMessage(
         error.message || "Unable to add this item to your cart.",
       );
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const handleQuantityChange = async (change) => {
+    if (!session || !selectedCartItem || isAddingToCart) return;
+    const nextQuantity = Number(selectedCartItem.quantity) + change;
+    if (change > 0 && (cannotIncrease || isVariantOutOfStock(selectedVariant))) return;
+    if (nextQuantity === 0 && !window.confirm("Remove this item from your cart?")) return;
+
+    try {
+      setCartErrorMessage("");
+      setCartMessage("");
+      setIsAddingToCart(true);
+      const updatedCart = nextQuantity === 0
+        ? await removeCartItem(session.token, selectedCartItem.cart_item_id)
+        : await updateCartItemQuantity(session.token, selectedCartItem.cart_item_id, nextQuantity);
+      if (currentCustomerId.current !== session.user?.id) return;
+      cartRequestVersion.current += 1;
+      setCartData(updatedCart);
+      setIsCartLoading(false);
+      onCartChanged?.(updatedCart);
+    } catch (error) {
+      setCartErrorMessage(error.message || "Unable to update item quantity.");
     } finally {
       setIsAddingToCart(false);
     }
@@ -450,24 +526,42 @@ export default function ProductDetailPage({ session, onCartChanged }) {
                 </p>
               )}
 
-              <button
-                className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={
-                  isAddingToCart || isVariantOutOfStock(selectedVariant)
-                }
-                onClick={handleAddToCart}
-                type="button"
-              >
-                <ShoppingBag size={18} />
-
-                {isVariantOutOfStock(selectedVariant)
-                  ? "Out of stock"
-                  : !session
-                    ? "Sign in to add to cart"
-                    : isAddingToCart
-                      ? "Adding to cart..."
-                      : "Add to cart"}
-              </button>
+              {session && cartLoadError ? (
+                <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert">
+                  <p>{cartLoadError}</p>
+                  <button className="mt-2 font-bold underline" onClick={() => setCartReloadKey((key) => key + 1)} type="button">Try again</button>
+                </div>
+              ) : session && selectedCartItem ? (
+                <div className="mt-5 flex flex-wrap items-end gap-3">
+                  <div>
+                    <p className="mb-2 text-sm font-semibold text-[var(--text-main)]">Quantity in cart</p>
+                    <div className="inline-flex items-center rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                      <button aria-label={Number(selectedCartItem.quantity) === 1 ? "Remove item from cart" : "Decrease quantity"} className="inline-flex h-12 w-12 items-center justify-center text-[var(--brand)] disabled:opacity-45" disabled={isAddingToCart || isCartLoading} onClick={() => handleQuantityChange(-1)} type="button"><Minus size={18} /></button>
+                      <span aria-live="polite" className="min-w-10 text-center font-bold text-[var(--text-main)]">{selectedCartItem.quantity}</span>
+                      <button aria-label="Increase quantity" className="inline-flex h-12 w-12 items-center justify-center text-[var(--brand)] disabled:opacity-45" disabled={isAddingToCart || isCartLoading || cannotIncrease || isVariantOutOfStock(selectedVariant)} onClick={() => handleQuantityChange(1)} type="button"><Plus size={18} /></button>
+                    </div>
+                  </div>
+                  <Link className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)]" to="/cart"><ShoppingBag size={18} />Go to cart</Link>
+                </div>
+              ) : (
+                <button
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--brand-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isAddingToCart || isCartLoading || isVariantOutOfStock(selectedVariant)}
+                  onClick={handleAddToCart}
+                  type="button"
+                >
+                  <ShoppingBag size={18} />
+                  {isVariantOutOfStock(selectedVariant)
+                    ? "Out of stock"
+                    : !session
+                      ? "Sign in to add to cart"
+                      : isCartLoading
+                        ? "Loading cart..."
+                        : isAddingToCart
+                          ? "Adding to cart..."
+                          : "Add to cart"}
+                </button>
+              )}
             </section>
           ) : (
             <div className="mt-6 rounded-2xl border border-dashed border-[var(--border)] p-5 text-sm leading-6 text-[var(--text-muted)]">

@@ -191,8 +191,9 @@ export default function AccountPage({ session, onSessionStart, onSessionEnd }) {
 
       onSessionStart(sessionData);
 
-      const returnPath = location.state?.from?.pathname || "/shop";
-      navigate(returnPath, { replace: true });
+      const from = location.state?.from;
+      const safePath = typeof from?.pathname === "string" && from.pathname.startsWith("/") && !from.pathname.startsWith("//");
+      navigate(safePath ? { pathname: from.pathname, search: typeof from.search === "string" && from.search.startsWith("?") ? from.search : "", hash: typeof from.hash === "string" && from.hash.startsWith("#") ? from.hash : "" } : "/shop", { replace: true });
     } catch (error) {
       setErrorMessage(error.message || "Unable to continue with this account.");
     } finally {

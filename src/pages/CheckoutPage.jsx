@@ -6,6 +6,11 @@ import {
   getActiveBankAccounts,
   getDeliveryZones,
   getMyCart,
+  getPendingPreorderDraft,
+  getPreorderDraftStatus,
+  cancelPreorderDraft,
+  preparePreorderCheckout,
+  submitPreorderCheckoutReceipt,
 } from "../services/api.js";
 import DepositProofUpload from "../components/DepositProofUpload.jsx";
 import { getCheckoutConfirmation } from "../helper/checkout-confirmation.js";
@@ -34,10 +39,10 @@ export default function CheckoutPage({ session, onCartChanged }) {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [recipient, setRecipient] = useState({
-    recipientName: "",
-    recipientPhone: "",
-  });
+  const [recipient, setRecipient] = useState(() => ({
+    recipientName: session?.user?.full_name || "",
+    recipientPhone: session?.user?.phone || "",
+  }));
 
   const [inStockDelivery, setInStockDelivery] = useState({
     deliveryMethod: "",
@@ -58,6 +63,11 @@ export default function CheckoutPage({ session, onCartChanged }) {
   const [preorderTermsAccepted, setPreorderTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [checkoutResult, setCheckoutResult] = useState(null);
+  const [preorderDraft, setPreorderDraft] = useState(null);
+  const [draftCancelError, setDraftCancelError] = useState("");
+  const [draftCancelAcknowledged, setDraftCancelAcknowledged] = useState(false);
+  const [draftCancelling, setDraftCancelling] = useState(false);
+  const [checkoutType, setCheckoutType] = useState("");
   const [submittedDepositIds, setSubmittedDepositIds] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [isPreorderZonePickerOpen, setIsPreorderZonePickerOpen] =
@@ -74,13 +84,37 @@ export default function CheckoutPage({ session, onCartChanged }) {
       setErrorMessage("");
       setIsLoading(true);
 
-      const [cart, zones] = await Promise.all([
+      const [cart, zones, draft] = await Promise.all([
         getMyCart(session.token),
         getDeliveryZones(),
+        getPendingPreorderDraft(session.token),
       ]);
 
       setCartData(cart);
       setDeliveryZones(zones);
+      const draftStorageKey = `preorder-checkout-${session.user.id}`;
+      if (draft) {
+        localStorage.setItem(draftStorageKey, draft.id);
+        setPreorderDraft(draft);
+        setBankAccounts(await getActiveBankAccounts());
+      } else {
+        const draftId = localStorage.getItem(draftStorageKey);
+        if (draftId) {
+          try {
+            const status = await getPreorderDraftStatus(session.token, draftId);
+            if (status.status === "completed") {
+              setSubmittedDepositIds(status.orders.map((order) => order.deposit_payment_id));
+              setCheckoutResult(status);
+              localStorage.removeItem(draftStorageKey);
+            } else if (status.status === "cancelled") {
+              localStorage.removeItem(draftStorageKey);
+            }
+          } catch (error) {
+            if (error.status === 404) localStorage.removeItem(draftStorageKey);
+            else throw error;
+          }
+        }
+      }
     } catch (error) {
       setErrorMessage(error.message || "Unable to prepare checkout.");
     } finally {
@@ -92,13 +126,20 @@ export default function CheckoutPage({ session, onCartChanged }) {
     loadCheckoutData();
   }, [loadCheckoutData]);
 
-  const hasInStockItems = cartData.items.some(
+  const cartHasInStock = cartData.items.some(
     (item) => item.fulfillment_type === "in_stock",
   );
 
-  const hasPreorderItems = cartData.items.some(
+  const cartHasPreorder = cartData.items.some(
     (item) => item.fulfillment_type === "preorder",
   );
+  const activeType = checkoutType && cartData.items.some((item) => item.fulfillment_type === checkoutType)
+    ? checkoutType : cartHasInStock ? "in_stock" : "preorder";
+  const hasInStockItems = cartHasInStock && activeType === "in_stock";
+  const hasPreorderItems = cartHasPreorder && activeType === "preorder";
+  const selectedItems = cartData.items.filter((item) => item.fulfillment_type === activeType);
+  const selectedSubtotal = selectedItems.reduce((total, item) => total + Number(item.line_total), 0);
+  const selectedQuantity = selectedItems.reduce((total, item) => total + Number(item.quantity), 0);
 
   const updateRecipient = (field, value) => {
     setRecipient((currentRecipient) => ({
@@ -194,6 +235,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
       const checkoutData = {
         ...recipient,
         preorderTermsAccepted,
+        fulfillmentType: activeType,
       };
 
       if (hasInStockItems) {
@@ -211,6 +253,13 @@ export default function CheckoutPage({ session, onCartChanged }) {
         };
       }
 
+      if (hasPreorderItems) {
+        const draft = await preparePreorderCheckout(session.token, checkoutData);
+        localStorage.setItem(`preorder-checkout-${session.user.id}`, draft.id);
+        setPreorderDraft(draft);
+        setBankAccounts(await getActiveBankAccounts());
+        return;
+      }
       const result = await checkoutMyCart(session.token, checkoutData);
 
       const hasCreatedPreorder = result.orders.some(
@@ -228,8 +277,9 @@ export default function CheckoutPage({ session, onCartChanged }) {
 
       setSubmittedDepositIds([]);
       setCheckoutResult(result);
-      setCartData(emptyCartData);
-      onCartChanged?.(emptyCartData);
+      const remainingCart = await getMyCart(session.token);
+      setCartData(remainingCart);
+      onCartChanged?.(remainingCart);
     } catch (error) {
       setErrorMessage(error.message || "Unable to complete checkout.");
     } finally {
@@ -254,7 +304,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
       ? Number(selectedPreorderZone.standard_fee)
       : null;
   const hasDeliveryFees = inStockFee !== null && preorderFee !== null;
-  const estimatedTotal = Number(cartData.summary.subtotal) + (inStockFee ?? 0) + (preorderFee ?? 0);
+  const estimatedTotal = selectedSubtotal + (inStockFee ?? 0) + (preorderFee ?? 0);
 
   const selectInStockZone = (zoneId) => {
     updateDelivery("inStock", "deliveryZoneId", String(zoneId));
@@ -284,6 +334,57 @@ export default function CheckoutPage({ session, onCartChanged }) {
     return (
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
         <div className="h-72 animate-pulse rounded-3xl bg-[var(--surface-muted)]" />
+      </main>
+    );
+  }
+
+  if (preorderDraft && !checkoutResult) {
+    return (
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
+        <section className="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-9">
+          <p className="text-sm font-bold tracking-[0.12em] text-[var(--accent)]">PREORDER DEPOSIT</p>
+          <h1 className="mt-2 text-3xl font-bold text-[var(--brand)]">Complete your preorder</h1>
+          <p className="mt-3 text-[var(--text-muted)]">Your order will be placed after you submit your deposit receipt. It will remain pending until your deposit is confirmed.</p>
+          <div className="mt-5 rounded-xl bg-[var(--surface-muted)] p-4">
+            {preorderDraft.items.map((item, index) => <p key={index} className="text-sm text-[var(--text-main)]">{item.product_name} · {item.color} · {item.size} · ×{item.quantity}</p>)}
+            <p className="mt-2 text-sm text-[var(--text-main)]">{preorderDraft.delivery_method === "pickup" ? "Pickup" : `Delivery: ${preorderDraft.delivery_address || ""}`} · {preorderDraft.recipient_name}</p>
+            <p className="mt-2 text-sm text-[var(--text-main)]">Order total: {formatMoney(preorderDraft.total_amount)}</p>
+            <p className="mt-3 font-bold text-[var(--brand)]">Deposit: {formatMoney(preorderDraft.deposit_amount)}</p>
+          </div>
+          <div className="mt-5 space-y-3">
+            {bankAccounts.length ? bankAccounts.map((account) => (
+              <div key={account.id} className="rounded-xl border border-[var(--border)] p-4 text-[var(--text-main)]">
+                <p className="font-bold">{account.label}</p><p>{account.bank_name} · {account.account_holder}</p><p>{account.account_number}</p>
+              </div>
+            )) : <p className="text-rose-700">Bank account details are unavailable. Please try again later.</p>}
+          </div>
+          {bankAccounts.length > 0 && <div className="mt-5"><DepositProofUpload amount={preorderDraft.deposit_amount} session={session}
+            onSubmitProof={(details) => submitPreorderCheckoutReceipt(session.token, preorderDraft.id, details)}
+            onSubmitted={async (result) => {
+              localStorage.removeItem(`preorder-checkout-${session.user.id}`);
+              setSubmittedDepositIds(result.orders.map((order) => order.deposit_payment_id));
+              setCheckoutResult(result);
+              setPreorderDraft(null);
+              try { const cart = await getMyCart(session.token); setCartData(cart); onCartChanged?.(cart); } catch { /* The order was already placed. */ }
+            }} /></div>}
+          {cartHasInStock && <button className="mt-5 font-semibold text-[var(--brand)] underline" type="button" onClick={() => { setPreorderDraft(null); setCheckoutType("in_stock"); }}>Continue with in-stock items</button>}
+          <p className="mt-4 text-sm text-[var(--text-muted)]">If you already transferred the deposit and need help, contact the shop before starting another preorder.</p>
+          <div className="mt-5 border-t border-[var(--border)] pt-4">
+            <p className="text-sm text-[var(--text-muted)]">Need to change your preorder? Cancel this checkout only if you have not transferred the deposit. Your items will stay in the cart.</p>
+            <label className="mt-3 flex items-start gap-2 text-sm text-[var(--text-main)]"><input type="checkbox" checked={draftCancelAcknowledged} onChange={(event) => setDraftCancelAcknowledged(event.target.checked)} />I have not transferred the deposit.</label>
+            {draftCancelError && <p role="alert" className="mt-2 text-sm text-rose-700">{draftCancelError}</p>}
+            <button type="button" disabled={!draftCancelAcknowledged || draftCancelling} className="mt-3 font-semibold text-[var(--brand)] underline disabled:opacity-50" onClick={async () => {
+              setDraftCancelling(true); setDraftCancelError("");
+              try {
+                await cancelPreorderDraft(session.token, preorderDraft.id);
+                localStorage.removeItem(`preorder-checkout-${session.user.id}`);
+                setPreorderDraft(null); setDraftCancelAcknowledged(false); setCheckoutType("preorder");
+                await loadCheckoutData();
+              } catch (error) { setDraftCancelError(error.message || "Unable to cancel checkout. Please contact the shop."); }
+              finally { setDraftCancelling(false); }
+            }}>{draftCancelling ? "Cancelling…" : "Cancel checkout and edit cart"}</button>
+          </div>
+        </section>
       </main>
     );
   }
@@ -423,6 +524,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
           >
             Continue shopping
           </Link>
+          {cartData.items.length > 0 && <button className="ml-4 mt-4 font-semibold text-[var(--brand)] underline" type="button" onClick={() => { setCheckoutResult(null); setCheckoutType(""); }}>Continue checkout</button>}
         </section>
       </main>
     );
@@ -446,6 +548,11 @@ export default function CheckoutPage({ session, onCartChanged }) {
           Delivery and payment details
         </h1>
       </div>
+      {cartHasInStock && cartHasPreorder && <div className="mt-5 flex flex-wrap gap-3">
+        <button type="button" onClick={() => setCheckoutType("in_stock")} aria-pressed={activeType === "in_stock"} className="rounded-xl border border-[var(--border)] px-4 py-2 font-semibold text-[var(--brand)]">In-stock checkout{activeType === "in_stock" ? " ✓" : ""}</button>
+        <button type="button" onClick={() => setCheckoutType("preorder")} aria-pressed={activeType === "preorder"} className="rounded-xl border border-[var(--border)] px-4 py-2 font-semibold text-[var(--brand)]">Preorder checkout{activeType === "preorder" ? " ✓" : ""}</button>
+        <p className="w-full text-sm text-[var(--text-muted)]">These items are placed as separate orders.</p>
+      </div>}
 
       {errorMessage && (
         <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
@@ -483,6 +590,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
                 <label className="block text-sm font-semibold text-[var(--text-main)]">
                   Recipient name
                   <input
+                    autoComplete="name"
                     className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition focus:border-[var(--accent)]"
                     onChange={(event) =>
                       updateRecipient("recipientName", event.target.value)
@@ -496,6 +604,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
                 <label className="block text-sm font-semibold text-[var(--text-main)]">
                   Recipient phone
                   <input
+                    autoComplete="tel"
                     className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 outline-none transition focus:border-[var(--accent)]"
                     inputMode="tel"
                     onChange={(event) =>
@@ -837,7 +946,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
                 ) : null}
               </section>
             )}
-            {preorderDelivery.deliveryMethod && (
+            {hasPreorderItems && preorderDelivery.deliveryMethod && (
               <>
                 <label className="mt-4 block text-sm font-semibold text-[var(--text-main)]">
                   Remaining-balance payment
@@ -906,8 +1015,8 @@ export default function CheckoutPage({ session, onCartChanged }) {
                   YOUR ORDER
                 </p>
                 <h2 className="mt-1 font-bold text-[var(--brand)]">
-                  {cartData.summary.total_quantity} item
-                  {cartData.summary.total_quantity === 1 ? "" : "s"}
+                  {selectedQuantity} item
+                  {selectedQuantity === 1 ? "" : "s"}
                 </h2>
               </div>
               <Link
@@ -919,7 +1028,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
             </div>
 
             <div className="mt-4 space-y-3 border-y border-[var(--border)] py-4">
-              {cartData.items.map((item) => (
+              {selectedItems.map((item) => (
                 <div
                   className="flex items-start justify-between gap-3 text-sm"
                   key={item.cart_item_id}
@@ -942,7 +1051,7 @@ export default function CheckoutPage({ session, onCartChanged }) {
             <div className="mt-4 space-y-3 text-sm text-[var(--text-main)]">
               <div className="flex justify-between gap-3">
                 <span>Items subtotal</span>
-                <span>{formatMoney(cartData.summary.subtotal)}</span>
+                <span>{formatMoney(selectedSubtotal)}</span>
               </div>
               {hasInStockItems && (
                 <div className="flex justify-between gap-3">
@@ -972,9 +1081,14 @@ export default function CheckoutPage({ session, onCartChanged }) {
               {isSubmitting
                 ? "Creating your order..."
                 : hasPreorderItems
-                  ? "Place order and view deposit"
+                  ? "Go to deposit"
                   : "Place secure order"}
             </button>
+            {hasPreorderItems && (
+              <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">
+                Your preorder is placed as pending after you submit the deposit receipt.
+              </p>
+            )}
           </aside>
         </div>
       )}

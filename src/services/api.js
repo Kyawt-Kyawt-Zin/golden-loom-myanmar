@@ -290,6 +290,30 @@ export const checkoutMyCart = async (token, checkoutData) => {
   });
 };
 
+export const getPendingPreorderDraft = (token) => request("/orders/checkout/preorder/draft", { headers: { Authorization: `Bearer ${token}` } });
+export const getPreorderDraftStatus = (token, draftId) => request(`/orders/checkout/preorder/${draftId}`, { headers: { Authorization: `Bearer ${token}` } });
+export const cancelPreorderDraft = (token, draftId) => request(`/orders/checkout/preorder/${draftId}/cancel`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ acknowledgedNoTransfer: true }) });
+
+export const preparePreorderCheckout = (token, checkoutData) => request("/orders/checkout/preorder/draft", {
+  method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(checkoutData),
+});
+
+export const submitPreorderCheckoutReceipt = async (token, draftId, { transactionReference, paymentProof }) => {
+  const current = await getPreorderDraftStatus(token, draftId);
+  if (current.status === "completed") return current;
+  const upload = await request(`/orders/checkout/preorder/${draftId}/upload`, {
+    method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ contentType: paymentProof.type }),
+  });
+  const form = new FormData();
+  for (const [name, value] of Object.entries(upload.fields)) form.append(name, value);
+  form.append("file", paymentProof);
+  const response = await fetch(upload.uploadUrl, { method: "POST", body: form });
+  if (!response.ok) throw new Error("Receipt upload failed. Please try again.");
+  return request(`/orders/checkout/preorder/${draftId}/complete`, {
+    method: "POST", headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ transactionReference }),
+  });
+};
+
 export const getMyOrders = async (token) => {
   return request("/orders/my", {
     headers: {
